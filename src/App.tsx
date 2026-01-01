@@ -81,12 +81,15 @@ const Tag = ({ label }: { label: string }) => {
   return (
     <span style={{
       fontSize: '10px',
-      fontFamily: "'IBM Plex Mono', monospace",
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+      fontWeight: 600,
       letterSpacing: '0.5px',
-      padding: '2px 6px',
+      padding: '3px 8px',
+      borderRadius: '4px',
       border: '1px solid',
-      borderColor: isNew ? '#ff6b35' : isUpdated ? '#fbbf24' : 'rgba(255,255,255,0.2)',
-      color: isNew ? '#ff6b35' : isUpdated ? '#fbbf24' : 'rgba(255,255,255,0.5)',
+      borderColor: isNew ? '#2B8EC3' : isUpdated ? '#79B8D9' : 'rgba(121,184,217,0.3)',
+      color: isNew ? '#2B8EC3' : isUpdated ? '#79B8D9' : 'rgba(170,209,231,0.7)',
+      background: isNew ? 'rgba(43,142,195,0.1)' : isUpdated ? 'rgba(121,184,217,0.1)' : 'transparent',
       textTransform: 'uppercase',
     }}>
       {label}
@@ -104,12 +107,13 @@ const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
-        border: '1px solid rgba(255,255,255,0.06)',
-        padding: '16px 16px 16px 20px',
+        background: hovered ? 'rgba(43,142,195,0.06)' : 'transparent',
+        border: '1px solid rgba(43,142,195,0.1)',
+        padding: '20px 20px 20px 24px',
         cursor: 'pointer',
         position: 'relative',
-        transition: 'background 100ms',
+        transition: 'all 150ms ease',
+        borderRadius: '8px',
         ...style,
       }}
     >
@@ -117,35 +121,37 @@ const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) 
       <div style={{
         position: 'absolute',
         left: 0,
-        top: 0,
-        bottom: 0,
+        top: '12px',
+        bottom: '12px',
         width: '3px',
-        background: '#ff6b35',
+        background: 'linear-gradient(180deg, #2B8EC3 0%, #79B8D9 100%)',
+        borderRadius: '2px',
         opacity: hovered ? 1 : 0,
-        transition: 'opacity 100ms',
+        transition: 'opacity 150ms',
       }} />
 
       <div style={{
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '14px',
-        color: '#fff',
-        marginBottom: '6px',
-        fontWeight: 500,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontSize: '15px',
+        color: '#FEFEFE',
+        marginBottom: '8px',
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
       }}>
         {tool.name}
       </div>
 
       <div style={{
-        fontSize: '13px',
-        color: 'rgba(255,255,255,0.45)',
-        lineHeight: 1.4,
-        marginBottom: '10px',
+        fontSize: '14px',
+        color: 'rgba(255,255,255,0.6)',
+        lineHeight: 1.5,
+        marginBottom: '12px',
         fontFamily: "'Inter', sans-serif",
       }}>
         {tool.desc}
       </div>
 
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {tool.tags.map((tag, i) => <Tag key={i} label={tag} />)}
       </div>
     </div>
@@ -232,21 +238,22 @@ const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '540px',
-          maxHeight: '420px',
+          width: '560px',
+          maxHeight: '480px',
           background: '#101012',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '2px',
+          border: '1px solid rgba(43,142,195,0.2)',
+          borderRadius: '12px',
           overflow: 'hidden',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
         }}
       >
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          padding: '0 16px',
+          borderBottom: '1px solid rgba(43,142,195,0.1)',
+          padding: '0 20px',
         }}>
-          <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: '12px', fontSize: '14px' }}>⌘</span>
+          <span style={{ color: '#79B8D9', marginRight: '12px', fontSize: '16px' }}>⌘</span>
           <input
             ref={inputRef}
             value={query}
@@ -257,58 +264,65 @@ const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              padding: '16px 0',
-              color: '#fff',
-              fontSize: '14px',
+              padding: '18px 0',
+              color: '#FEFEFE',
+              fontSize: '15px',
               fontFamily: "'Inter', sans-serif",
             }}
           />
           <span style={{
-            fontSize: '10px',
-            color: 'rgba(255,255,255,0.3)',
-            padding: '3px 6px',
-            border: '1px solid rgba(255,255,255,0.15)',
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px',
+            color: 'rgba(121,184,217,0.6)',
+            padding: '4px 8px',
+            border: '1px solid rgba(43,142,195,0.3)',
+            borderRadius: '4px',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 500,
           }}>ESC</span>
         </div>
 
-        <div style={{ maxHeight: '360px', overflow: 'auto' }}>
+        <div style={{ maxHeight: '400px', overflow: 'auto', padding: '8px' }}>
           {filtered.map((tool, i) => (
             <div
               key={tool.id}
               onClick={() => { onSelect(tool); onClose(); }}
               style={{
-                padding: '12px 16px',
+                padding: '14px 16px',
                 cursor: 'pointer',
-                background: i === selectedIndex ? 'rgba(255,107,53,0.1)' : 'transparent',
-                borderLeft: i === selectedIndex ? '2px solid #ff6b35' : '2px solid transparent',
-                transition: 'background 50ms',
+                background: i === selectedIndex ? 'rgba(43,142,195,0.12)' : 'transparent',
+                borderLeft: i === selectedIndex ? '3px solid #2B8EC3' : '3px solid transparent',
+                borderRadius: '6px',
+                marginBottom: '4px',
+                transition: 'all 100ms',
               }}
             >
               <div style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '13px',
-                color: '#fff',
-                marginBottom: '2px',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#FEFEFE',
+                marginBottom: '4px',
               }}>
                 {tool.name}
               </div>
               <div style={{
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.4)',
+                fontSize: '13px',
+                color: 'rgba(255,255,255,0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
+                fontFamily: "'Inter', sans-serif",
               }}>
                 <span style={{
-                  color: '#ff6b35',
-                  fontSize: '10px',
+                  color: '#79B8D9',
+                  fontSize: '11px',
                   textTransform: 'uppercase',
-                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 600,
                 }}>
                   {tool.category}
                 </span>
-                <span>·</span>
+                <span style={{ color: 'rgba(121,184,217,0.4)' }}>·</span>
                 <span>{tool.desc}</span>
               </div>
             </div>
@@ -340,7 +354,7 @@ const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.5)',
+        background: 'rgba(0,0,0,0.6)',
         display: 'flex',
         justifyContent: 'flex-end',
         zIndex: 50,
@@ -349,11 +363,11 @@ const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '480px',
+          width: '520px',
           height: '100%',
           background: '#0a0a0b',
-          borderLeft: '1px solid rgba(255,255,255,0.08)',
-          padding: '32px',
+          borderLeft: '1px solid rgba(43,142,195,0.2)',
+          padding: '40px',
           overflow: 'auto',
           animation: 'slideIn 150ms ease-out',
         }}
@@ -362,75 +376,81 @@ const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void
           onClick={onClose}
           style={{
             position: 'absolute',
-            top: '24px',
-            right: '24px',
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(255,255,255,0.4)',
+            top: '28px',
+            right: '28px',
+            background: 'rgba(43,142,195,0.1)',
+            border: '1px solid rgba(43,142,195,0.2)',
+            borderRadius: '8px',
+            color: '#79B8D9',
             cursor: 'pointer',
-            fontSize: '18px',
-            padding: '8px',
+            fontSize: '16px',
+            padding: '8px 12px',
+            transition: 'all 150ms',
           }}
         >
           ✕
         </button>
 
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '10px',
-          color: '#ff6b35',
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: '11px',
+          fontWeight: 600,
+          color: '#79B8D9',
           textTransform: 'uppercase',
           letterSpacing: '1px',
-          marginBottom: '8px',
+          marginBottom: '12px',
         }}>
           {tool.category}
         </div>
 
         <h2 style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '24px',
-          color: '#fff',
-          fontWeight: 500,
-          margin: '0 0 16px 0',
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: '26px',
+          color: '#FEFEFE',
+          fontWeight: 700,
+          margin: '0 0 20px 0',
           lineHeight: 1.3,
+          letterSpacing: '-0.02em',
         }}>
           {tool.name}
         </h2>
 
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
           {tool.tags.map((tag, i) => <Tag key={i} label={tag} />)}
         </div>
 
         <p style={{
-          color: 'rgba(255,255,255,0.6)',
-          fontSize: '14px',
-          lineHeight: 1.6,
+          color: 'rgba(255,255,255,0.7)',
+          fontSize: '15px',
+          lineHeight: 1.7,
           fontFamily: "'Inter', sans-serif",
-          marginBottom: '32px',
+          marginBottom: '36px',
         }}>
           {tool.desc}
         </p>
 
         <div style={{
           padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          marginBottom: '24px',
+          background: 'rgba(43,142,195,0.06)',
+          border: '1px solid rgba(43,142,195,0.15)',
+          borderRadius: '8px',
+          marginBottom: '28px',
         }}>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: '11px',
-            color: 'rgba(255,255,255,0.4)',
-            marginBottom: '8px',
+            fontWeight: 600,
+            color: 'rgba(121,184,217,0.7)',
+            marginBottom: '10px',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
           }}>
             Path
           </div>
           <code style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '12px',
-            color: 'rgba(255,255,255,0.7)',
+            fontFamily: "monospace",
+            fontSize: '13px',
+            color: '#AAD1E7',
           }}>
             {tool.path}
           </code>
@@ -443,17 +463,20 @@ const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
-            color: '#ff6b35',
-            fontSize: '13px',
-            fontFamily: "'Inter', sans-serif",
+            gap: '10px',
+            background: '#2B8EC3',
+            color: '#FEFEFE',
+            fontSize: '14px',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 600,
             textDecoration: 'none',
-            borderBottom: '1px solid #ff6b35',
-            paddingBottom: '2px',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            transition: 'all 150ms',
           }}
         >
           Open in GitHub
-          <span style={{ fontSize: '11px' }}>↗</span>
+          <span style={{ fontSize: '14px' }}>↗</span>
         </a>
       </div>
     </div>
@@ -485,19 +508,19 @@ export default function App() {
     <div style={{
       minHeight: '100vh',
       background: '#0a0a0b',
-      color: '#fff',
+      color: '#FEFEFE',
       fontFamily: "'Inter', sans-serif",
       display: 'flex',
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+        ::-webkit-scrollbar-thumb { background: rgba(43,142,195,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(43,142,195,0.35); }
 
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
@@ -507,52 +530,56 @@ export default function App() {
 
       {/* Sidebar */}
       <aside style={{
-        width: sidebarExpanded ? '200px' : '56px',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        padding: '20px 0',
+        width: sidebarExpanded ? '220px' : '64px',
+        borderRight: '1px solid rgba(43,142,195,0.12)',
+        padding: '24px 0',
         transition: 'width 150ms',
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
+        background: 'rgba(43,142,195,0.02)',
       }}>
         {/* Logo area */}
         <div
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
           style={{
-            padding: '0 16px 24px',
+            padding: '0 20px 28px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '12px',
           }}
         >
           <div style={{
-            width: '24px',
-            height: '24px',
-            background: '#ff6b35',
+            width: '32px',
+            height: '32px',
+            background: 'linear-gradient(135deg, #2B8EC3 0%, #79B8D9 100%)',
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '14px',
-            fontWeight: 600,
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: '16px',
+            fontWeight: 700,
+            color: '#FEFEFE',
           }}>
             F
           </div>
           {sidebarExpanded && (
             <span style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '13px',
-              fontWeight: 500,
-              color: 'rgba(255,255,255,0.9)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: '15px',
+              fontWeight: 600,
+              color: '#FEFEFE',
+              letterSpacing: '-0.01em',
             }}>
-              toolbox
+              Fabric Toolbox
             </span>
           )}
         </div>
 
         {/* Categories */}
-        <nav style={{ flex: 1 }}>
+        <nav style={{ flex: 1, padding: '0 12px' }}>
           {CATEGORIES.map(cat => {
             const isActive = activeCategory === cat.id;
             return (
@@ -564,14 +591,16 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  padding: '10px 16px',
-                  background: 'transparent',
+                  padding: '12px 12px',
+                  background: isActive ? 'rgba(43,142,195,0.12)' : 'transparent',
                   border: 'none',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   position: 'relative',
-                  color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
-                  transition: 'color 100ms',
+                  color: isActive ? '#FEFEFE' : 'rgba(255,255,255,0.5)',
+                  transition: 'all 150ms',
                   textAlign: 'left',
+                  marginBottom: '4px',
                 }}
               >
                 {/* Active indicator */}
@@ -581,25 +610,27 @@ export default function App() {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   width: '3px',
-                  height: '20px',
-                  background: '#ff6b35',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #2B8EC3 0%, #79B8D9 100%)',
+                  borderRadius: '2px',
                   opacity: isActive ? 1 : 0,
-                  transition: 'opacity 100ms',
+                  transition: 'opacity 150ms',
                 }} />
 
                 <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '14px',
-                  width: '20px',
+                  fontSize: '16px',
+                  width: '24px',
                   textAlign: 'center',
+                  opacity: isActive ? 1 : 0.7,
                 }}>
                   {cat.icon}
                 </span>
 
                 {sidebarExpanded && (
                   <span style={{
-                    fontSize: '13px',
+                    fontSize: '14px',
                     fontFamily: "'Inter', sans-serif",
+                    fontWeight: isActive ? 500 : 400,
                   }}>
                     {cat.label}
                   </span>
@@ -612,24 +643,26 @@ export default function App() {
         {/* Stats */}
         {sidebarExpanded && (
           <div style={{
-            padding: '16px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            padding: '20px',
+            margin: '0 12px',
+            borderTop: '1px solid rgba(43,142,195,0.1)',
           }}>
             <div style={{
-              fontSize: '10px',
-              color: 'rgba(255,255,255,0.3)',
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11px',
+              color: 'rgba(121,184,217,0.6)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
-              marginBottom: '6px',
+              marginBottom: '8px',
             }}>
               Total tools
             </div>
             <div style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '24px',
-              color: '#fff',
-              fontWeight: 500,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: '28px',
+              color: '#79B8D9',
+              fontWeight: 700,
             }}>
               {Object.values(TOOLS_DATA).flat().length}
             </div>
@@ -641,25 +674,26 @@ export default function App() {
       <main style={{ flex: 1, overflow: 'auto' }}>
         {/* Header */}
         <header style={{
-          padding: '20px 32px',
+          padding: '20px 40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(43,142,195,0.08)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.3)',
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '13px',
+              color: 'rgba(121,184,217,0.5)',
+              fontFamily: "'Inter', sans-serif",
             }}>
               fabric-toolbox
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
+            <span style={{ color: 'rgba(43,142,195,0.3)' }}>/</span>
             <span style={{
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.6)',
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '13px',
+              color: '#79B8D9',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
             }}>
               {activeCategory}
             </span>
@@ -672,66 +706,72 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              padding: '8px 12px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              padding: '10px 16px',
+              background: 'rgba(43,142,195,0.06)',
+              border: '1px solid rgba(43,142,195,0.15)',
               cursor: 'pointer',
-              color: 'rgba(255,255,255,0.4)',
-              fontSize: '13px',
+              color: 'rgba(170,209,231,0.7)',
+              fontSize: '14px',
               fontFamily: "'Inter', sans-serif",
-              borderRadius: '2px',
-              minWidth: '200px',
+              borderRadius: '8px',
+              minWidth: '240px',
+              transition: 'all 150ms',
             }}
           >
             <span>Search tools...</span>
             <span style={{
               marginLeft: 'auto',
-              fontSize: '10px',
-              padding: '2px 6px',
-              border: '1px solid rgba(255,255,255,0.15)',
-              fontFamily: "'IBM Plex Mono', monospace",
-              color: 'rgba(255,255,255,0.35)',
+              fontSize: '11px',
+              padding: '3px 8px',
+              border: '1px solid rgba(43,142,195,0.3)',
+              borderRadius: '4px',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 600,
+              color: 'rgba(121,184,217,0.6)',
             }}>⌘K</span>
           </button>
         </header>
 
         {/* Category header */}
-        <div style={{ padding: '32px 32px 24px' }}>
+        <div style={{ padding: '40px 40px 32px' }}>
           <h1 style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '28px',
-            fontWeight: 500,
-            color: '#fff',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: '32px',
+            fontWeight: 700,
+            color: '#FEFEFE',
             margin: 0,
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '16px',
+            letterSpacing: '-0.02em',
           }}>
             {CATEGORIES.find(c => c.id === activeCategory)?.label}
             <span style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.3)',
-              fontWeight: 400,
+              fontSize: '16px',
+              color: '#79B8D9',
+              fontWeight: 500,
+              background: 'rgba(43,142,195,0.1)',
+              padding: '4px 12px',
+              borderRadius: '20px',
             }}>
-              ({tools.length})
+              {tools.length}
             </span>
           </h1>
         </div>
 
         {/* Tools grid */}
         <div style={{
-          padding: '0 32px 48px',
+          padding: '0 40px 60px',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1px',
-          background: 'rgba(255,255,255,0.06)',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+          gap: '16px',
         }}>
           {tools.map(tool => (
             <ToolCard
               key={tool.id}
               tool={tool}
               onClick={() => setSelectedTool({ ...tool, category: activeCategory })}
-              style={{ background: '#0a0a0b' }}
+              style={{ background: 'rgba(43,142,195,0.02)' }}
             />
           ))}
         </div>

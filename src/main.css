@@ -1,5 +1,5 @@
 /* Fonts - Must be first */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 @import 'tailwindcss';
 @import "tw-animate-css";
@@ -12,29 +12,30 @@
   --bg-primary: #0a0a0b;
   --bg-secondary: #101012;
   --bg-tertiary: rgba(255, 255, 255, 0.02);
-  --bg-hover: rgba(255, 255, 255, 0.03);
-  --bg-selected: rgba(255, 107, 53, 0.1);
+  --bg-hover: rgba(43, 142, 195, 0.08);
+  --bg-selected: rgba(43, 142, 195, 0.15);
 
   /* Colors - Text */
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-muted: rgba(255, 255, 255, 0.45);
-  --text-faint: rgba(255, 255, 255, 0.3);
+  --text-primary: #FEFEFE;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-faint: rgba(255, 255, 255, 0.35);
 
-  /* Colors - Accent */
-  --accent: #ff6b35;
-  --accent-hover: #ff8c5a;
-  --accent-new: #ff6b35;
-  --accent-updated: #fbbf24;
+  /* Colors - Accent (Ocean Blue Palette) */
+  --accent: #2B8EC3;
+  --accent-hover: #79B8D9;
+  --accent-light: #AAD1E7;
+  --accent-new: #2B8EC3;
+  --accent-updated: #79B8D9;
 
   /* Colors - Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.1);
-  --border-tag: rgba(255, 255, 255, 0.2);
+  --border-subtle: rgba(43, 142, 195, 0.1);
+  --border-medium: rgba(43, 142, 195, 0.15);
+  --border-strong: rgba(43, 142, 195, 0.25);
+  --border-tag: rgba(121, 184, 217, 0.4);
 
   /* Typography */
-  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', 'Berkeley Mono', monospace;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-sans: 'Inter', -apple-system, sans-serif;
 
   /* Typography - Sizes */
@@ -123,7 +124,7 @@ body {
 
 /* Focus states */
 *:focus-visible {
-  outline: 2px solid rgba(255, 107, 53, 0.5);
+  outline: 2px solid rgba(43, 142, 195, 0.5);
   outline-offset: 2px;
 }
 
