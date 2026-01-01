@@ -6,13 +6,13 @@ A modern dashboard for exploring, configuring, and running Microsoft Fabric tool
 
 ## Features
 
-- **Tool Catalog Browser** - Explore 20+ tools organized by category (Monitoring, Accelerators, Samples, Scripts, Tools)
+- **40+ Tool Catalog** - Explore tools organized by category (Monitoring, Accelerators, Samples, Scripts, Tools)
+- **AI Tool Finder** - Natural language search with auto-configuration extraction
 - **Command Palette** - Quick search with `Cmd+K` / `Ctrl+K`
 - **Configuration Panel** - Configure tools with required parameters
-- **Run Instructions** - Step-by-step guides with copyable commands
-- **Download Files** - Generate `.env` files and run scripts
+- **Deploy Packages** - Generate ZIP files with scripts, .env, and README
+- **Git Integration** - Push configurations directly to your repository
 - **Self-Contained** - All tool source files included in `fabric-tools/`
-- **Responsive Design** - Collapsible sidebar for different screen sizes
 - **Modern UI** - Ocean Blue color palette with Plus Jakarta Sans typography
 
 ## Getting Started
@@ -50,11 +50,92 @@ npm run preview
 
 ## How It Works
 
+### Quick Start Flow
+
 1. **Browse** - Select a category and explore available tools
 2. **Configure** - Click a tool to open the configuration panel
-3. **Set Parameters** - Fill in required configuration values (workspace IDs, connection strings, etc.)
-4. **Run** - Follow step-by-step instructions with copyable commands
-5. **Download** - Export `.env` files and shell scripts for your environment
+3. **Set Parameters** - Fill in required configuration values
+4. **Deploy** - Download ZIP package with scripts and configs
+5. **Run** - Execute `./run.sh` (Linux/macOS) or `run.bat` (Windows)
+
+---
+
+## AI Tool Finder
+
+Click the **"Ask AI"** button to use natural language to find tools and auto-configure them.
+
+### Basic Usage
+
+Just describe what you want to do:
+- "migrate from Azure Data Factory"
+- "monitor my Fabric costs"
+- "improve DAX performance"
+
+### Auto-Configuration (Pro Tip!)
+
+Include IDs and names in your query to **automatically pre-fill** the configuration form:
+
+| Query Example | Auto-Extracted Values |
+|--------------|----------------------|
+| `migrate from ADF my-factory in resource group rg-prod to workspace 12345678-1234-1234-1234-123456789abc` | adfName: my-factory, adfResourceGroup: rg-prod, targetWorkspaceId: 12345678-... |
+| `monitor costs for capacity 87654321-4321-4321-4321-abcdef123456` | capacityId: 87654321-... |
+| `copy warehouse from server myserver.database.fabric.microsoft.com database sales_db` | serverName: myserver..., databaseName: sales_db |
+
+### Supported Auto-Config Patterns
+
+| Pattern | Example | Extracted Field |
+|---------|---------|----------------|
+| Workspace ID (GUID) | `to workspace abc12345-...` | workspaceId |
+| Resource Group | `resource group rg-production` | adfResourceGroup |
+| ADF/Factory Name | `from ADF my-factory` | adfName |
+| Capacity ID | `capacity 12345678-...` | capacityId |
+| Server Name | `server myserver.database.fabric.microsoft.com` | serverName |
+| Database Name | `database sales_db` | databaseName |
+| Storage Account | `storage mystorageaccount` | storageAccount |
+
+---
+
+## Deploy Packages
+
+The Deploy tab generates a complete package:
+
+| File | Description |
+|------|-------------|
+| `.env` | Environment variables with your config values |
+| `run.sh` | Linux/macOS shell script with all commands |
+| `run.bat` | Windows batch script |
+| `README.md` | Full documentation with prerequisites |
+| `git-push.sh` | (Optional) Script to push to your Git repo |
+
+### Using the Package
+
+```bash
+# 1. Unzip the downloaded package
+unzip adf-migrate-deployment.zip
+cd adf-migrate-deployment
+
+# 2. Edit .env if needed
+nano .env
+
+# 3. Run (Linux/macOS)
+chmod +x run.sh
+./run.sh
+
+# 3. Run (Windows)
+run.bat
+```
+
+---
+
+## Git Integration
+
+To push configurations to your repository:
+
+1. Go to the **Deploy** tab
+2. Enter your **Repository URL** (e.g., `https://github.com/user/repo.git`)
+3. Set the **Branch** (default: `main`)
+4. Download the ZIP - it includes `git-push.sh`
+5. Run `./git-push.sh` to commit and push
 
 ## Tool Categories
 
@@ -106,9 +187,11 @@ npm run preview
 
 ## Roadmap
 
-- [x] Tool catalog with configuration UI
+- [x] Tool catalog with 40+ tools
 - [x] Download scripts and env files
-- [ ] **LLM Integration** - Natural language queries ("migrate my data from Azure to Fabric")
+- [x] **AI Tool Finder** - Natural language queries with auto-config extraction
+- [x] **Deploy Packages** - ZIP generation with .env, scripts, README
+- [x] **Git Integration** - Push configs to repositories
 - [ ] Azure AD Authentication
 - [ ] Direct tool execution from dashboard
 - [ ] Tool execution status tracking
