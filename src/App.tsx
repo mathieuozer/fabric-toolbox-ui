@@ -1,58 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-
-// Tool data from the actual Fabric Toolbox repo
-const TOOLS_DATA = {
-  monitoring: [
-    { id: 'fca', name: 'Fabric Cost Analysis', desc: 'Monitor and analyze your Fabric capacity costs', tags: ['UPDATED', 'PowerBI'], path: '/monitoring/fabric-cost-analysis' },
-    { id: 'fuam', name: 'Fabric Unified Admin Monitoring', desc: 'Centralized admin monitoring for your Fabric tenant', tags: ['UPDATED', 'PowerBI'], path: '/monitoring/fabric-unified-admin-monitoring' },
-    { id: 'fpm', name: 'Fabric Platform Monitoring', desc: 'Monitor Fabric with RTI and Capacity Events', tags: ['RTI'], path: '/monitoring/fabric-platform-monitoring' },
-    { id: 'wsm', name: 'Workspace Monitoring Dashboards', desc: 'Report templates for workspace monitoring', tags: ['PowerBI'], path: '/monitoring/workspace-monitoring-dashboards' },
-    { id: 'fsm', name: 'Fabric Spark Monitoring', desc: 'Monitor Spark workloads with Real-Time Intelligence', tags: ['RTI', 'Spark'], path: '/monitoring/fabric-spark-monitoring' },
-  ],
-  accelerators: [
-    { id: 'bcdr', name: 'BCDR Accelerator', desc: 'Business Continuity and Disaster Recovery patterns', tags: ['Python'], path: '/accelerators/BCDR' },
-    { id: 'cicd-git', name: 'Git-Based Deployments', desc: 'CI/CD patterns using Git integration', tags: ['CICD', 'Git'], path: '/accelerators/CICD/Git-based-deployments' },
-    { id: 'cicd-pipelines', name: 'Fabric Deployment Pipelines', desc: 'Deploy using native Fabric deployment pipelines', tags: ['CICD'], path: '/accelerators/CICD/Deploy-using-Fabric-deployment-pipelines' },
-    { id: 'cicd-branch', name: 'Branch to Workspace', desc: 'Branch out to new workspace patterns', tags: ['CICD', 'Git'], path: '/accelerators/CICD/Branch-out-to-new-workspace' },
-    { id: 'dw-backup', name: 'DW Backup & Recovery', desc: 'Data Warehouse backup and recovery automation', tags: ['T-SQL', 'Python'], path: '/accelerators/data-warehouse-backup-and-recovery' },
-    { id: 'pbi-modernize', name: 'Datamart to DW Migration', desc: 'Power BI datamart to Fabric Data Warehouse', tags: ['Migration'], path: '/accelerators/power-bi-to-fabric-data-warehouse-modernization' },
-    { id: 'rti-eventhouse', name: 'RTI Eventhouse', desc: 'Real Time Intelligence Eventhouse patterns', tags: ['RTI', 'KQL'], path: '/accelerators/real-time-intelligence_eventhouse' },
-    { id: 'rti-eventstream', name: 'RTI Eventstream', desc: 'Real Time Intelligence Eventstream patterns', tags: ['RTI'], path: '/accelerators/real-time-intelligence_eventstream' },
-    { id: 'policy-weaver', name: 'Policy Weaver', desc: 'Mirror data access policies from Databricks and Snowflake', tags: ['Python', 'Security'], path: '/accelerators/policy-weaver' },
-  ],
-  samples: [
-    { id: 'open-mirror', name: 'Open Mirroring', desc: 'Sample implementation for open mirroring', tags: ['Python'], path: '/samples/open-mirroring' },
-    { id: 'adv-schedule', name: 'Advanced Pipeline Scheduling', desc: 'Schedule pipelines for specific days', tags: ['Pipeline'], path: '/samples/Advanced_Data_Pipeline_Scheduleing_Specific_Day' },
-    { id: 'poll-trigger', name: 'Polling Storage Event Trigger', desc: 'Event-based triggers for storage changes', tags: ['Pipeline'], path: '/samples/polling-storage-even-trigger' },
-    { id: 'nb-refresh', name: 'Refresh SQL Endpoint Tables', desc: 'Notebook to refresh tables in SQL Endpoint', tags: ['Notebook', 'Python'], path: '/samples/notebook-refresh-tables-in-sql-endpoint' },
-    { id: 'viz-dataflows', name: 'Visualize Linked Dataflows', desc: 'Visualizing linked table dataflows', tags: ['PowerBI'], path: '/samples/visualizing-linked-table-dataflows' },
-    { id: 'az-policy', name: 'Azure Capacity Policies', desc: 'Azure Policies to pause or delete capacity', tags: ['Azure', 'Policy'], path: '/samples/azure-policy' },
-    { id: 'nb-pool', name: 'List Pool Connections', desc: 'Notebook to list dedicated pool connections', tags: ['Notebook'], path: '/samples/notebook-list-dedicated-pool-connections' },
-    { id: 'nb-warehouse', name: 'Warehouse CRUD', desc: 'Create, list, delete Data Warehouse via notebook', tags: ['Notebook', 'Python'], path: '/samples/notebook-create-list-delete-warehouse' },
-    { id: 'nb-size', name: 'Workspace Size', desc: 'Calculate workspace storage size', tags: ['Notebook'], path: '/samples/notebook-workspace-size' },
-  ],
-  scripts: [
-    { id: 'mirror-cci', name: 'Mirror CCI Tables', desc: 'Mirror CCI tables for Fabric SQL DB', tags: ['NEW', 'T-SQL'], path: '/scripts/sql-Mirror-CCI-tables' },
-    { id: 'ci-views', name: 'CI Views', desc: 'Continuous integration views for warehouses', tags: ['T-SQL'], path: '/scripts/dw-ci-views' },
-    { id: 'dw-props', name: 'DW/SQL AE Properties', desc: 'Query data warehouse and SQL analytics endpoint properties', tags: ['T-SQL'], path: '/scripts/dw-properties' },
-    { id: 'dw-requests', name: 'DW Active Requests', desc: 'Monitor active requests in your warehouse', tags: ['T-SQL'], path: '/scripts/dw-active-requests' },
-    { id: 'dw-dmv', name: 'Copy DMV to Table', desc: 'Copy DMV results to persistent table', tags: ['T-SQL'], path: '/scripts/dw-copy-dmv-to-table' },
-    { id: 'dw-timepoint', name: 'Queries at Timepoint', desc: 'Find queries running at specific time', tags: ['T-SQL'], path: '/scripts/dw-queries-running-at-timepoint' },
-    { id: 'dw-kill', name: 'SP Kill Queries', desc: 'Stored procedure to terminate queries', tags: ['T-SQL'], path: '/scripts/dw-sp-kill-queries' },
-  ],
-  tools: [
-    { id: 'adf-migrate', name: 'ADF Migration Assistant', desc: 'Migrate Azure Data Factory pipelines to Fabric', tags: ['UPDATED', 'TypeScript'], path: '/tools/FabricDataFactoryMigrationAssistant' },
-    { id: 'dax-mcp', name: 'DAX Performance Tuner MCP', desc: 'MCP Server for DAX performance tuning', tags: ['MCP', 'Python'], path: '/tools/DAXPerformanceTunerMCPServer' },
-    { id: 'sem-mcp', name: 'Semantic Model MCP Server', desc: 'MCP Server for semantic model operations', tags: ['MCP', 'Python'], path: '/tools/SemanticModelMCPServer' },
-    { id: 'mirror-sdk', name: 'Open Mirroring SDK', desc: 'Python SDK for open mirroring', tags: ['Python', 'SDK'], path: '/tools/OpenMirroringPythonSDK' },
-    { id: 'ps-module', name: 'MicrosoftFabricMgmt', desc: 'PowerShell module for Fabric management', tags: ['PowerShell'], path: '/tools/MicrosoftFabricMgmt' },
-    { id: 'gen2-copy', name: 'Gen2 to Fabric DW Copy', desc: 'Copy tables from Gen2 Dedicated Pool to Fabric DW', tags: ['Python'], path: '/tools/Gen2toFabricDW' },
-    { id: 'sem-audit', name: 'Semantic Model Audit', desc: 'Audit and analyze semantic models', tags: ['Python'], path: '/tools/SemanticModelAudit' },
-    { id: 'copy-wh', name: 'Copy Warehouse', desc: 'Clone warehouse schemas and data', tags: ['Python'], path: '/tools/copy-warehouse' },
-    { id: 'tpch', name: 'TPC-H Benchmarking', desc: 'TPC-H benchmark suite for Fabric', tags: ['Benchmark'], path: '/tools/tpch-benchmarking' },
-    { id: 'dax-perf', name: 'DAX Performance Testing', desc: 'Test and measure DAX query performance', tags: ['DAX', 'Python'], path: '/tools/DAXPerformanceTesting' },
-  ],
-};
+import { TOOLS_MANIFEST, ToolManifest, getToolsByCategory, searchTools } from './data/toolsManifest';
 
 const CATEGORIES = [
   { id: 'monitoring', label: 'Monitoring', icon: '◉' },
@@ -62,16 +9,15 @@ const CATEGORIES = [
   { id: 'tools', label: 'Tools', icon: '⚙' },
 ];
 
-const GITHUB_BASE = 'https://github.com/microsoft/fabric-toolbox/tree/main';
-
-interface Tool {
-  id: string;
-  name: string;
-  desc: string;
-  tags: string[];
-  path: string;
-  category?: string;
-}
+const TYPE_ICONS: Record<string, string> = {
+  python: '🐍',
+  powershell: '⚡',
+  notebook: '📓',
+  sql: '🗃️',
+  powerbi: '📊',
+  typescript: '📘',
+  cli: '💻',
+};
 
 // Tag component
 const Tag = ({ label }: { label: string }) => {
@@ -98,7 +44,7 @@ const Tag = ({ label }: { label: string }) => {
 };
 
 // Tool card component
-const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) => void; style?: React.CSSProperties }) => {
+const ToolCard = ({ tool, onClick, style }: { tool: ToolManifest; onClick: (tool: ToolManifest) => void; style?: React.CSSProperties }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -130,15 +76,17 @@ const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) 
         transition: 'opacity 150ms',
       }} />
 
-      <div style={{
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        fontSize: '15px',
-        color: '#FEFEFE',
-        marginBottom: '8px',
-        fontWeight: 600,
-        letterSpacing: '-0.01em',
-      }}>
-        {tool.name}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <span style={{ fontSize: '16px' }}>{TYPE_ICONS[tool.type] || '📦'}</span>
+        <div style={{
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: '15px',
+          color: '#FEFEFE',
+          fontWeight: 600,
+          letterSpacing: '-0.01em',
+        }}>
+          {tool.name}
+        </div>
       </div>
 
       <div style={{
@@ -148,7 +96,7 @@ const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) 
         marginBottom: '12px',
         fontFamily: "'Inter', sans-serif",
       }}>
-        {tool.desc}
+        {tool.description}
       </div>
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -159,31 +107,19 @@ const ToolCard = ({ tool, onClick, style }: { tool: Tool; onClick: (tool: Tool) 
 };
 
 // Command palette
-const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
+const CommandPalette = ({ isOpen, onClose, onSelect }: {
   isOpen: boolean;
   onClose: () => void;
-  tools: typeof TOOLS_DATA;
-  onSelect: (tool: Tool) => void;
+  onSelect: (tool: ToolManifest) => void;
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const allTools = useMemo(() =>
-    Object.entries(tools).flatMap(([category, items]) =>
-      items.map(t => ({ ...t, category }))
-    ), [tools]
-  );
-
   const filtered = useMemo(() => {
-    if (!query) return allTools.slice(0, 8);
-    const q = query.toLowerCase();
-    return allTools.filter(t =>
-      t.name.toLowerCase().includes(q) ||
-      t.desc.toLowerCase().includes(q) ||
-      t.tags.some(tag => tag.toLowerCase().includes(q))
-    ).slice(0, 8);
-  }, [query, allTools]);
+    if (!query) return TOOLS_MANIFEST.slice(0, 8);
+    return searchTools(query).slice(0, 8);
+  }, [query]);
 
   useEffect(() => {
     if (isOpen) {
@@ -296,14 +232,16 @@ const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
                 transition: 'all 100ms',
               }}
             >
-              <div style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#FEFEFE',
-                marginBottom: '4px',
-              }}>
-                {tool.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span>{TYPE_ICONS[tool.type] || '📦'}</span>
+                <span style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#FEFEFE',
+                }}>
+                  {tool.name}
+                </span>
               </div>
               <div style={{
                 fontSize: '13px',
@@ -323,7 +261,7 @@ const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
                   {tool.category}
                 </span>
                 <span style={{ color: 'rgba(121,184,217,0.4)' }}>·</span>
-                <span>{tool.desc}</span>
+                <span>{tool.description}</span>
               </div>
             </div>
           ))}
@@ -344,9 +282,76 @@ const CommandPalette = ({ isOpen, onClose, tools, onSelect }: {
   );
 };
 
-// Detail panel
-const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void }) => {
+// Configuration Panel - Run/Configure tools
+const ConfigPanel = ({ tool, onClose }: { tool: ToolManifest | null; onClose: () => void }) => {
+  const [configValues, setConfigValues] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'config' | 'run' | 'download'>('config');
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tool) {
+      const defaults: Record<string, string> = {};
+      tool.config.forEach(c => {
+        if (c.default) defaults[c.name] = c.default;
+      });
+      setConfigValues(defaults);
+      setActiveTab('config');
+    }
+  }, [tool]);
+
   if (!tool) return null;
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const generateEnvFile = () => {
+    return tool.config.map(c =>
+      `${c.name.toUpperCase()}=${configValues[c.name] || ''}`
+    ).join('\n');
+  };
+
+  const generateRunScript = () => {
+    const lines = ['#!/bin/bash', '', '# Generated by Fabric Toolbox UI', ''];
+
+    // Add prerequisite checks
+    tool.prerequisites.forEach(p => {
+      if (p.checkCmd) {
+        lines.push(`# Check ${p.name}`);
+        lines.push(`${p.checkCmd} || echo "Warning: ${p.name} not found"`);
+      }
+    });
+
+    lines.push('');
+
+    // Add run instructions
+    tool.runInstructions.forEach(r => {
+      lines.push(`# Step ${r.step}: ${r.description}`);
+      if (r.command) {
+        let cmd = r.command;
+        // Replace config placeholders
+        tool.config.forEach(c => {
+          cmd = cmd.replace(`$${c.name}`, configValues[c.name] || `\${${c.name.toUpperCase()}}`);
+        });
+        lines.push(cmd);
+      }
+      lines.push('');
+    });
+
+    return lines.join('\n');
+  };
+
+  const downloadFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div
@@ -363,121 +368,518 @@ const DetailPanel = ({ tool, onClose }: { tool: Tool | null; onClose: () => void
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '520px',
+          width: '600px',
           height: '100%',
           background: '#0a0a0b',
           borderLeft: '1px solid rgba(43,142,195,0.2)',
-          padding: '40px',
-          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
           animation: 'slideIn 150ms ease-out',
         }}
       >
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '28px',
-            right: '28px',
-            background: 'rgba(43,142,195,0.1)',
-            border: '1px solid rgba(43,142,195,0.2)',
-            borderRadius: '8px',
-            color: '#79B8D9',
-            cursor: 'pointer',
-            fontSize: '16px',
-            padding: '8px 12px',
-            transition: 'all 150ms',
-          }}
-        >
-          ✕
-        </button>
-
+        {/* Header */}
         <div style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: '11px',
-          fontWeight: 600,
-          color: '#79B8D9',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          marginBottom: '12px',
+          padding: '24px 32px',
+          borderBottom: '1px solid rgba(43,142,195,0.1)',
         }}>
-          {tool.category}
-        </div>
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(43,142,195,0.1)',
+              border: '1px solid rgba(43,142,195,0.2)',
+              borderRadius: '8px',
+              color: '#79B8D9',
+              cursor: 'pointer',
+              fontSize: '14px',
+              padding: '8px 12px',
+            }}
+          >
+            ✕
+          </button>
 
-        <h2 style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: '26px',
-          color: '#FEFEFE',
-          fontWeight: 700,
-          margin: '0 0 20px 0',
-          lineHeight: 1.3,
-          letterSpacing: '-0.02em',
-        }}>
-          {tool.name}
-        </h2>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
-          {tool.tags.map((tag, i) => <Tag key={i} label={tag} />)}
-        </div>
-
-        <p style={{
-          color: 'rgba(255,255,255,0.7)',
-          fontSize: '15px',
-          lineHeight: 1.7,
-          fontFamily: "'Inter', sans-serif",
-          marginBottom: '36px',
-        }}>
-          {tool.desc}
-        </p>
-
-        <div style={{
-          padding: '20px',
-          background: 'rgba(43,142,195,0.06)',
-          border: '1px solid rgba(43,142,195,0.15)',
-          borderRadius: '8px',
-          marginBottom: '28px',
-        }}>
-          <div style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '11px',
-            fontWeight: 600,
-            color: 'rgba(121,184,217,0.7)',
-            marginBottom: '10px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}>
-            Path
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '24px' }}>{TYPE_ICONS[tool.type] || '📦'}</span>
+            <div>
+              <div style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#79B8D9',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                marginBottom: '4px',
+              }}>
+                {tool.category} · {tool.type}
+              </div>
+              <h2 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '22px',
+                color: '#FEFEFE',
+                fontWeight: 700,
+                margin: 0,
+              }}>
+                {tool.name}
+              </h2>
+            </div>
           </div>
-          <code style={{
-            fontFamily: "monospace",
-            fontSize: '13px',
-            color: '#AAD1E7',
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {tool.tags.map((tag, i) => <Tag key={i} label={tag} />)}
+          </div>
+
+          <p style={{
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: '14px',
+            lineHeight: 1.6,
+            margin: 0,
           }}>
-            {tool.path}
-          </code>
+            {tool.description}
+          </p>
         </div>
 
-        <a
-          href={`${GITHUB_BASE}${tool.path}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '10px',
-            background: '#2B8EC3',
-            color: '#FEFEFE',
-            fontSize: '14px',
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 600,
-            textDecoration: 'none',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            transition: 'all 150ms',
-          }}
-        >
-          Open in GitHub
-          <span style={{ fontSize: '14px' }}>↗</span>
-        </a>
+        {/* Tabs */}
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid rgba(43,142,195,0.1)',
+          padding: '0 32px',
+        }}>
+          {(['config', 'run', 'download'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '12px 20px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === tab ? '2px solid #2B8EC3' : '2px solid transparent',
+                color: activeTab === tab ? '#FEFEFE' : 'rgba(255,255,255,0.5)',
+                fontSize: '13px',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 600,
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+              }}
+            >
+              {tab === 'config' ? '⚙️ Configure' : tab === 'run' ? '▶️ Run' : '📥 Download'}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          {activeTab === 'config' && (
+            <div>
+              {/* Prerequisites */}
+              <div style={{ marginBottom: '28px' }}>
+                <h3 style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#79B8D9',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}>
+                  Prerequisites
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {tool.prerequisites.map((p, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '12px 16px',
+                        background: 'rgba(43,142,195,0.05)',
+                        border: '1px solid rgba(43,142,195,0.1)',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span style={{ color: '#FEFEFE', fontSize: '13px' }}>{p.name}</span>
+                      {p.installCmd && (
+                        <button
+                          onClick={() => copyToClipboard(p.installCmd!, p.name)}
+                          style={{
+                            background: 'rgba(43,142,195,0.15)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            color: '#79B8D9',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {copied === p.name ? '✓ Copied' : p.installCmd}
+                        </button>
+                      )}
+                      {p.url && !p.installCmd && (
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#79B8D9',
+                            fontSize: '12px',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Learn more →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Configuration Form */}
+              <div>
+                <h3 style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#79B8D9',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                }}>
+                  Configuration
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {tool.config.map((c, i) => (
+                    <div key={i}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '6px',
+                        fontSize: '13px',
+                        color: '#FEFEFE',
+                        fontFamily: "'Inter', sans-serif",
+                      }}>
+                        {c.name}
+                        {c.required && <span style={{ color: '#2B8EC3' }}>*</span>}
+                      </label>
+                      <p style={{
+                        fontSize: '12px',
+                        color: 'rgba(255,255,255,0.5)',
+                        marginBottom: '8px',
+                      }}>
+                        {c.description}
+                      </p>
+                      {c.options ? (
+                        <select
+                          value={configValues[c.name] || ''}
+                          onChange={e => setConfigValues({ ...configValues, [c.name]: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            background: 'rgba(43,142,195,0.05)',
+                            border: '1px solid rgba(43,142,195,0.2)',
+                            borderRadius: '6px',
+                            color: '#FEFEFE',
+                            fontSize: '13px',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="">Select...</option>
+                          {c.options.map(o => (
+                            <option key={o} value={o}>{o}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={c.type === 'number' ? 'number' : 'text'}
+                          value={configValues[c.name] || ''}
+                          onChange={e => setConfigValues({ ...configValues, [c.name]: e.target.value })}
+                          placeholder={c.default || `Enter ${c.name}...`}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            background: 'rgba(43,142,195,0.05)',
+                            border: '1px solid rgba(43,142,195,0.2)',
+                            borderRadius: '6px',
+                            color: '#FEFEFE',
+                            fontSize: '13px',
+                            outline: 'none',
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'run' && (
+            <div>
+              <h3 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#79B8D9',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: '16px',
+              }}>
+                Run Instructions
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {tool.runInstructions.map((r, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '16px',
+                      background: 'rgba(43,142,195,0.05)',
+                      border: '1px solid rgba(43,142,195,0.1)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                    }}>
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        background: '#2B8EC3',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#FEFEFE',
+                        flexShrink: 0,
+                      }}>
+                        {r.step}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{
+                          color: '#FEFEFE',
+                          fontSize: '14px',
+                          margin: 0,
+                          marginBottom: r.command ? '8px' : 0,
+                        }}>
+                          {r.description}
+                          {r.isOptional && (
+                            <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>
+                              (optional)
+                            </span>
+                          )}
+                        </p>
+                        {r.command && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '8px 12px',
+                            borderRadius: '4px',
+                          }}>
+                            <code style={{
+                              flex: 1,
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                              color: '#AAD1E7',
+                            }}>
+                              {r.command}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(r.command!, `step-${r.step}`)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#79B8D9',
+                                cursor: 'pointer',
+                                padding: '4px',
+                              }}
+                            >
+                              {copied === `step-${r.step}` ? '✓' : '📋'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {tool.output && (
+                <div style={{ marginTop: '24px' }}>
+                  <h4 style={{
+                    fontSize: '12px',
+                    color: 'rgba(255,255,255,0.5)',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}>
+                    Expected Output
+                  </h4>
+                  <p style={{
+                    color: '#79B8D9',
+                    fontSize: '14px',
+                    padding: '12px 16px',
+                    background: 'rgba(43,142,195,0.08)',
+                    borderRadius: '6px',
+                    borderLeft: '3px solid #2B8EC3',
+                  }}>
+                    {tool.output}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'download' && (
+            <div>
+              <h3 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#79B8D9',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: '16px',
+              }}>
+                Download Files
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Environment File */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'rgba(43,142,195,0.05)',
+                    border: '1px solid rgba(43,142,195,0.1)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div>
+                      <h4 style={{ color: '#FEFEFE', fontSize: '14px', margin: 0 }}>
+                        📄 Environment File (.env)
+                      </h4>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '4px 0 0' }}>
+                        Configuration values as environment variables
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => downloadFile(generateEnvFile(), '.env')}
+                      style={{
+                        background: '#2B8EC3',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        color: '#FEFEFE',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Download
+                    </button>
+                  </div>
+                  <pre style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#AAD1E7',
+                    overflow: 'auto',
+                    margin: 0,
+                  }}>
+                    {generateEnvFile()}
+                  </pre>
+                </div>
+
+                {/* Run Script */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'rgba(43,142,195,0.05)',
+                    border: '1px solid rgba(43,142,195,0.1)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div>
+                      <h4 style={{ color: '#FEFEFE', fontSize: '14px', margin: 0 }}>
+                        🚀 Run Script (run.sh)
+                      </h4>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '4px 0 0' }}>
+                        Shell script with all commands
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => downloadFile(generateRunScript(), `run-${tool.id}.sh`)}
+                      style={{
+                        background: '#2B8EC3',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        color: '#FEFEFE',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Download
+                    </button>
+                  </div>
+                  <pre style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#AAD1E7',
+                    overflow: 'auto',
+                    margin: 0,
+                    maxHeight: '200px',
+                  }}>
+                    {generateRunScript()}
+                  </pre>
+                </div>
+
+                {/* Tool Files */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'rgba(43,142,195,0.05)',
+                    border: '1px solid rgba(43,142,195,0.1)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <h4 style={{ color: '#FEFEFE', fontSize: '14px', margin: '0 0 8px' }}>
+                    📁 Tool Source Files
+                  </h4>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 12px' }}>
+                    Located at: <code style={{ color: '#AAD1E7' }}>{tool.path}</code>
+                  </p>
+                  <button
+                    onClick={() => copyToClipboard(tool.path, 'path')}
+                    style={{
+                      background: 'rgba(43,142,195,0.15)',
+                      border: '1px solid rgba(43,142,195,0.3)',
+                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      color: '#79B8D9',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copied === 'path' ? '✓ Copied' : 'Copy Path'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -488,7 +890,7 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState('monitoring');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [selectedTool, setSelectedTool] = useState<ToolManifest | null>(null);
 
   // Keyboard shortcut for command palette
   useEffect(() => {
@@ -502,7 +904,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  const tools = TOOLS_DATA[activeCategory as keyof typeof TOOLS_DATA] || [];
+  const tools = getToolsByCategory(activeCategory);
 
   return (
     <div style={{
@@ -525,6 +927,11 @@ export default function App() {
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+
+        select option {
+          background: #101012;
+          color: #FEFEFE;
         }
       `}</style>
 
@@ -582,6 +989,7 @@ export default function App() {
         <nav style={{ flex: 1, padding: '0 12px' }}>
           {CATEGORIES.map(cat => {
             const isActive = activeCategory === cat.id;
+            const count = getToolsByCategory(cat.id).length;
             return (
               <button
                 key={cat.id}
@@ -627,13 +1035,25 @@ export default function App() {
                 </span>
 
                 {sidebarExpanded && (
-                  <span style={{
-                    fontSize: '14px',
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: isActive ? 500 : 400,
-                  }}>
-                    {cat.label}
-                  </span>
+                  <>
+                    <span style={{
+                      flex: 1,
+                      fontSize: '14px',
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: isActive ? 500 : 400,
+                    }}>
+                      {cat.label}
+                    </span>
+                    <span style={{
+                      fontSize: '11px',
+                      color: '#79B8D9',
+                      background: 'rgba(43,142,195,0.15)',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                    }}>
+                      {count}
+                    </span>
+                  </>
                 )}
               </button>
             );
@@ -664,7 +1084,7 @@ export default function App() {
               color: '#79B8D9',
               fontWeight: 700,
             }}>
-              {Object.values(TOOLS_DATA).flat().length}
+              {TOOLS_MANIFEST.length}
             </div>
           </div>
         )}
@@ -770,7 +1190,7 @@ export default function App() {
             <ToolCard
               key={tool.id}
               tool={tool}
-              onClick={() => setSelectedTool({ ...tool, category: activeCategory })}
+              onClick={() => setSelectedTool(tool)}
               style={{ background: 'rgba(43,142,195,0.02)' }}
             />
           ))}
@@ -781,12 +1201,11 @@ export default function App() {
       <CommandPalette
         isOpen={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        tools={TOOLS_DATA}
         onSelect={(tool) => setSelectedTool(tool)}
       />
 
-      {/* Detail panel */}
-      <DetailPanel
+      {/* Configuration panel */}
+      <ConfigPanel
         tool={selectedTool}
         onClose={() => setSelectedTool(null)}
       />

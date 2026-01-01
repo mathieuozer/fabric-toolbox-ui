@@ -28,3 +28,11 @@ npm-debug.log*
 
 # Cache
 .vite/
+
+# Large binary files in fabric-tools (tracked separately via Git LFS or excluded)
+# Keeping source files, excluding generated/binary
+fabric-tools/**/node_modules/
+fabric-tools/**/.git/
+fabric-tools/**/dist/
+fabric-tools/**/__pycache__/
+fabric-tools/**/*.pyc
