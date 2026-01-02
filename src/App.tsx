@@ -4,10 +4,12 @@ import { useLLM } from './hooks/useLLM';
 import { useAuth } from './hooks/useAuth';
 import { useExecution } from './hooks/useExecution';
 import { useInfrastructureBuilder } from './hooks/useInfrastructureBuilder';
+import { useSubscription } from './hooks/useSubscription';
 import { ExtractedConfig, EXAMPLE_QUERIES } from './services/llmService';
 import { downloadDeploymentZip } from './services/deployService';
 import { addExecutionRecord } from './services/executionTrackingService';
 import { InfraMessage, ScriptFormat } from './services/infrastructureService';
+import { mockUpgrade, isStripeConfigured, redirectToCheckout } from './services/stripeService';
 
 // Auth Button Component
 const AuthButton = () => {
@@ -1436,16 +1438,72 @@ const InfrastructureBuilderPanel = ({
     error,
     templates,
     costEstimate,
-    sendMessage,
+    sendMessage: sendMessageRaw,
     reset,
-    regenerateScript,
+    regenerateScript: regenerateScriptRaw,
     downloadScript,
-    selectTemplate,
+    selectTemplate: selectTemplateRaw,
   } = useInfrastructureBuilder();
 
+  const {
+    tier,
+    isProUser,
+    remainingGenerations,
+    usageDisplay,
+    daysUntilReset,
+    canGenerate,
+    isTemplateLocked,
+    isFormatLocked,
+    recordGeneration,
+    applyWatermark,
+    tierDisplayName,
+    tierBadgeColor,
+    pricing,
+    handleUpgrade,
+  } = useSubscription();
+
   const [input, setInput] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Wrap sendMessage to check generation limits
+  const sendMessage = async (message: string) => {
+    if (!canGenerate()) {
+      setUpgradeReason('generation limit');
+      setShowUpgradeModal(true);
+      return;
+    }
+    recordGeneration();
+    await sendMessageRaw(message);
+  };
+
+  // Wrap selectTemplate to check template access
+  const selectTemplate = (templateId: string) => {
+    if (isTemplateLocked(templateId)) {
+      setUpgradeReason('premium template');
+      setShowUpgradeModal(true);
+      return;
+    }
+    if (!canGenerate()) {
+      setUpgradeReason('generation limit');
+      setShowUpgradeModal(true);
+      return;
+    }
+    recordGeneration();
+    selectTemplateRaw(templateId);
+  };
+
+  // Wrap regenerateScript to check format access
+  const regenerateScript = (format: ScriptFormat) => {
+    if (isFormatLocked(format)) {
+      setUpgradeReason(`${format} format`);
+      setShowUpgradeModal(true);
+      return;
+    }
+    regenerateScriptRaw(format);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -1522,16 +1580,38 @@ const InfrastructureBuilderPanel = ({
               }}>
                 Infrastructure Builder
               </h2>
-              <p style={{
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.5)',
-                margin: 0,
-              }}>
-                AI-powered Fabric environment setup
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,0.5)',
+                  margin: 0,
+                }}>
+                  AI-powered Fabric environment setup
+                </p>
+                <span style={{
+                  padding: '2px 8px',
+                  background: tierBadgeColor,
+                  borderRadius: '10px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: '#FEFEFE',
+                }}>
+                  {tierDisplayName}
+                </span>
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Usage display for free tier */}
+            {!isProUser && (
+              <div style={{
+                fontSize: '11px',
+                color: remainingGenerations === 0 ? '#EF4444' : 'rgba(255,255,255,0.5)',
+              }}>
+                {usageDisplay} · Resets in {daysUntilReset}d
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={reset}
               style={{
@@ -1560,6 +1640,7 @@ const InfrastructureBuilderPanel = ({
             >
               ✕
             </button>
+            </div>
           </div>
         </div>
 
@@ -1696,30 +1777,38 @@ const InfrastructureBuilderPanel = ({
                       <button
                         onClick={() => regenerateScript('bicep')}
                         style={{
-                          background: msg.scriptFormat === 'bicep' ? '#22C55E' : 'rgba(34,197,94,0.1)',
-                          border: '1px solid rgba(34,197,94,0.3)',
+                          background: isFormatLocked('bicep')
+                            ? 'rgba(107,114,128,0.1)'
+                            : msg.scriptFormat === 'bicep' ? '#22C55E' : 'rgba(34,197,94,0.1)',
+                          border: `1px solid ${isFormatLocked('bicep') ? 'rgba(107,114,128,0.3)' : 'rgba(34,197,94,0.3)'}`,
                           borderRadius: '4px',
                           padding: '6px 12px',
-                          color: msg.scriptFormat === 'bicep' ? '#FEFEFE' : '#22C55E',
+                          color: isFormatLocked('bicep')
+                            ? '#6B7280'
+                            : msg.scriptFormat === 'bicep' ? '#FEFEFE' : '#22C55E',
                           fontSize: '12px',
                           cursor: 'pointer',
                         }}
                       >
-                        Bicep
+                        Bicep {isFormatLocked('bicep') && '🔒'}
                       </button>
                       <button
                         onClick={() => regenerateScript('terraform')}
                         style={{
-                          background: msg.scriptFormat === 'terraform' ? '#22C55E' : 'rgba(34,197,94,0.1)',
-                          border: '1px solid rgba(34,197,94,0.3)',
+                          background: isFormatLocked('terraform')
+                            ? 'rgba(107,114,128,0.1)'
+                            : msg.scriptFormat === 'terraform' ? '#22C55E' : 'rgba(34,197,94,0.1)',
+                          border: `1px solid ${isFormatLocked('terraform') ? 'rgba(107,114,128,0.3)' : 'rgba(34,197,94,0.3)'}`,
                           borderRadius: '4px',
                           padding: '6px 12px',
-                          color: msg.scriptFormat === 'terraform' ? '#FEFEFE' : '#22C55E',
+                          color: isFormatLocked('terraform')
+                            ? '#6B7280'
+                            : msg.scriptFormat === 'terraform' ? '#FEFEFE' : '#22C55E',
                           fontSize: '12px',
                           cursor: 'pointer',
                         }}
                       >
-                        Terraform
+                        Terraform {isFormatLocked('terraform') && '🔒'}
                       </button>
                     </div>
                   </div>
@@ -1830,21 +1919,34 @@ const InfrastructureBuilderPanel = ({
                 gap: '8px',
                 marginBottom: '16px',
               }}>
-                {templates.map(template => (
+                {templates.map(template => {
+                  const locked = isTemplateLocked(template.id);
+                  return (
                   <button
                     key={template.id}
                     type="button"
                     onClick={() => selectTemplate(template.id)}
                     style={{
                       padding: '12px',
-                      background: 'rgba(34,197,94,0.05)',
-                      border: '1px solid rgba(34,197,94,0.2)',
+                      background: locked ? 'rgba(107,114,128,0.1)' : 'rgba(34,197,94,0.05)',
+                      border: `1px solid ${locked ? 'rgba(107,114,128,0.3)' : 'rgba(34,197,94,0.2)'}`,
                       borderRadius: '8px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       transition: 'all 150ms',
+                      position: 'relative',
                     }}
                   >
+                    {locked && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        fontSize: '12px',
+                      }}>
+                        🔒
+                      </div>
+                    )}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1855,7 +1957,7 @@ const InfrastructureBuilderPanel = ({
                       <span style={{
                         fontSize: '12px',
                         fontWeight: 600,
-                        color: '#22C55E',
+                        color: locked ? '#6B7280' : '#22C55E',
                       }}>
                         {template.name}
                       </span>
@@ -1870,12 +1972,14 @@ const InfrastructureBuilderPanel = ({
                     <div style={{
                       marginTop: '6px',
                       fontSize: '10px',
-                      color: 'rgba(34,197,94,0.7)',
+                      color: locked ? 'rgba(107,114,128,0.7)' : 'rgba(34,197,94,0.7)',
                     }}>
                       {template.config.capacitySize} · {template.estimatedSetupTime}
+                      {locked && ' · Pro'}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Quick suggestions */}
@@ -1951,6 +2055,130 @@ const InfrastructureBuilderPanel = ({
           )}
         </form>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10001,
+        }}>
+          <div style={{
+            background: '#1E1E1E',
+            border: '1px solid rgba(139,92,246,0.3)',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '400px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚀</div>
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: 600,
+              color: '#FEFEFE',
+              margin: '0 0 8px 0',
+            }}>
+              Upgrade to Pro
+            </h3>
+            <p style={{
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.6)',
+              margin: '0 0 24px 0',
+              lineHeight: 1.5,
+            }}>
+              {upgradeReason === 'generation limit'
+                ? "You've reached your free tier limit of 3 generations per month."
+                : upgradeReason === 'premium template'
+                ? 'This template is only available with Pro.'
+                : `${upgradeReason.charAt(0).toUpperCase() + upgradeReason.slice(1)} is only available with Pro.`}
+            </p>
+
+            <div style={{
+              background: 'rgba(139,92,246,0.1)',
+              border: '1px solid rgba(139,92,246,0.3)',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px',
+            }}>
+              <div style={{
+                fontSize: '32px',
+                fontWeight: 700,
+                color: '#8B5CF6',
+                marginBottom: '4px',
+              }}>
+                ${pricing.pro.monthly}/mo
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.5)',
+              }}>
+                Cancel anytime
+              </div>
+
+              <div style={{
+                marginTop: '16px',
+                textAlign: 'left',
+                fontSize: '13px',
+                color: 'rgba(255,255,255,0.7)',
+              }}>
+                <div style={{ marginBottom: '8px' }}>✓ All 6+ templates</div>
+                <div style={{ marginBottom: '8px' }}>✓ PowerShell, Bicep & Terraform</div>
+                <div style={{ marginBottom: '8px' }}>✓ Unlimited generations</div>
+                <div style={{ marginBottom: '8px' }}>✓ Save & export configs</div>
+                <div style={{ marginBottom: '8px' }}>✓ No watermarks</div>
+                <div>✓ Databricks & Snowflake (coming)</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (isStripeConfigured()) {
+                  // Production: redirect to Stripe checkout
+                  redirectToCheckout().catch(console.error);
+                } else {
+                  // Development: use mock upgrade
+                  const stripeData = mockUpgrade();
+                  handleUpgrade(stripeData);
+                  setShowUpgradeModal(false);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#FEFEFE',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: '12px',
+              }}
+            >
+              {isStripeConfigured() ? 'Upgrade Now' : 'Upgrade Now (Dev Mode)'}
+            </button>
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                color: 'rgba(255,255,255,0.6)',
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
