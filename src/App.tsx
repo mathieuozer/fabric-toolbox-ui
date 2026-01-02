@@ -3,9 +3,11 @@ import { TOOLS_MANIFEST, ToolManifest, getToolsByCategory, searchTools } from '.
 import { useLLM } from './hooks/useLLM';
 import { useAuth } from './hooks/useAuth';
 import { useExecution } from './hooks/useExecution';
+import { useInfrastructureBuilder } from './hooks/useInfrastructureBuilder';
 import { ExtractedConfig, EXAMPLE_QUERIES } from './services/llmService';
 import { downloadDeploymentZip } from './services/deployService';
 import { addExecutionRecord } from './services/executionTrackingService';
+import { InfraMessage, ScriptFormat } from './services/infrastructureService';
 
 // Auth Button Component
 const AuthButton = () => {
@@ -1419,6 +1421,417 @@ const MarkdownText = ({ text }: { text: string }) => {
   );
 };
 
+// Infrastructure Builder Panel
+const InfrastructureBuilderPanel = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const {
+    messages,
+    conversationState,
+    isProcessing,
+    error,
+    sendMessage,
+    reset,
+    regenerateScript,
+    downloadScript,
+  } = useInfrastructureBuilder();
+
+  const [input, setInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isProcessing) return;
+    const query = input;
+    setInput('');
+    await sendMessage(query);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        zIndex: 60,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '560px',
+          height: '100%',
+          background: '#0a0a0b',
+          borderLeft: '1px solid rgba(34,197,94,0.2)',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'slideIn 150ms ease-out',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid rgba(34,197,94,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+            }}>
+              🏗️
+            </div>
+            <div>
+              <h2 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: '16px',
+                color: '#FEFEFE',
+                fontWeight: 600,
+                margin: 0,
+              }}>
+                Infrastructure Builder
+              </h2>
+              <p style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.5)',
+                margin: 0,
+              }}>
+                AI-powered Fabric environment setup
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={reset}
+              style={{
+                background: 'rgba(34,197,94,0.1)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: '6px',
+                color: '#22C55E',
+                cursor: 'pointer',
+                fontSize: '12px',
+                padding: '6px 12px',
+              }}
+            >
+              Start Over
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'rgba(34,197,94,0.1)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: '6px',
+                color: '#22C55E',
+                cursor: 'pointer',
+                fontSize: '14px',
+                padding: '6px 10px',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Chat area */}
+        <div style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '16px 24px',
+        }}>
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: '90%',
+                  padding: '12px 16px',
+                  borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  background: msg.role === 'user'
+                    ? 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)'
+                    : 'rgba(34,197,94,0.1)',
+                  border: msg.role === 'user' ? 'none' : '1px solid rgba(34,197,94,0.2)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: 1.6,
+                    color: msg.role === 'user' ? '#FEFEFE' : 'rgba(255,255,255,0.9)',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: msg.content
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>')
+                      .replace(/\n/g, '<br/>'),
+                  }}
+                />
+
+                {/* Script display */}
+                {msg.script && (
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '8px',
+                    }}>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#22C55E',
+                        fontWeight: 600,
+                      }}>
+                        {msg.scriptFormat === 'powershell' ? 'PowerShell Script' : 'Bicep Template'}
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.script || '');
+                          }}
+                          style={{
+                            background: 'rgba(34,197,94,0.2)',
+                            border: '1px solid rgba(34,197,94,0.3)',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            color: '#22C55E',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Copy
+                        </button>
+                        <button
+                          onClick={downloadScript}
+                          style={{
+                            background: '#22C55E',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            color: '#FEFEFE',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                    <pre
+                      style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(34,197,94,0.2)',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        fontSize: '11px',
+                        lineHeight: 1.4,
+                        overflow: 'auto',
+                        maxHeight: '300px',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {msg.script.slice(0, 2000)}
+                      {msg.script.length > 2000 && '\n\n... (script continues - download for full version)'}
+                    </pre>
+
+                    {/* Format toggle */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      marginTop: '12px',
+                    }}>
+                      <button
+                        onClick={() => regenerateScript('powershell')}
+                        style={{
+                          background: msg.scriptFormat === 'powershell' ? '#22C55E' : 'rgba(34,197,94,0.1)',
+                          border: '1px solid rgba(34,197,94,0.3)',
+                          borderRadius: '4px',
+                          padding: '6px 12px',
+                          color: msg.scriptFormat === 'powershell' ? '#FEFEFE' : '#22C55E',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        PowerShell
+                      </button>
+                      <button
+                        onClick={() => regenerateScript('bicep')}
+                        style={{
+                          background: msg.scriptFormat === 'bicep' ? '#22C55E' : 'rgba(34,197,94,0.1)',
+                          border: '1px solid rgba(34,197,94,0.3)',
+                          borderRadius: '4px',
+                          padding: '6px 12px',
+                          color: msg.scriptFormat === 'bicep' ? '#FEFEFE' : '#22C55E',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Bicep
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {isProcessing && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px',
+              color: 'rgba(34,197,94,0.7)',
+              fontSize: '14px',
+            }}>
+              <span style={{ animation: 'pulse 1.5s infinite' }}>●</span>
+              Thinking...
+            </div>
+          )}
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: '8px',
+              color: '#EF4444',
+              fontSize: '13px',
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input area */}
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            padding: '16px 24px',
+            borderTop: '1px solid rgba(34,197,94,0.1)',
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+          }}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={
+                conversationState.phase === 'complete'
+                  ? 'Ask about the script or say "start over"...'
+                  : 'Describe your infrastructure needs...'
+              }
+              disabled={isProcessing}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                background: 'rgba(34,197,94,0.05)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: '8px',
+                color: '#FEFEFE',
+                fontSize: '14px',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              disabled={isProcessing || !input.trim()}
+              style={{
+                padding: '12px 20px',
+                background: isProcessing || !input.trim()
+                  ? 'rgba(34,197,94,0.2)'
+                  : 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#FEFEFE',
+                fontSize: '14px',
+                cursor: isProcessing || !input.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Send
+            </button>
+          </div>
+
+          {/* Quick actions */}
+          {conversationState.phase === 'greeting' && (
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginTop: '12px',
+              flexWrap: 'wrap',
+            }}>
+              {[
+                'Dev workspace with 3 lakehouses',
+                'Production environment with CI/CD',
+                'Guide me step by step',
+              ].map(suggestion => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => sendMessage(suggestion)}
+                  style={{
+                    padding: '6px 12px',
+                    background: 'rgba(34,197,94,0.1)',
+                    border: '1px solid rgba(34,197,94,0.2)',
+                    borderRadius: '16px',
+                    color: '#22C55E',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // AI Chat Panel
 const AIChatPanel = ({
   isOpen,
@@ -1893,6 +2306,7 @@ export default function App() {
   const [selectedTool, setSelectedTool] = useState<ToolManifest | null>(null);
   const [prefilledConfig, setPrefilledConfig] = useState<ExtractedConfig | undefined>(undefined);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [infraBuilderOpen, setInfraBuilderOpen] = useState(false);
 
   // Keyboard shortcut for command palette
   useEffect(() => {
@@ -2122,6 +2536,28 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
+            {/* Infrastructure Builder button */}
+            <button
+              onClick={() => setInfraBuilderOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.15) 100%)',
+                border: '1px solid rgba(34,197,94,0.3)',
+                cursor: 'pointer',
+                color: '#22C55E',
+                fontSize: '14px',
+                fontFamily: "'Inter', sans-serif",
+                borderRadius: '8px',
+                transition: 'all 150ms',
+              }}
+            >
+              <span>🏗️</span>
+              <span>Build Infra</span>
+            </button>
+
             {/* AI Chat button */}
             <button
               onClick={() => setAiChatOpen(true)}
@@ -2255,6 +2691,12 @@ export default function App() {
           setSelectedTool(tool);
           setPrefilledConfig(extractedConfig);
         }}
+      />
+
+      {/* Infrastructure Builder panel */}
+      <InfrastructureBuilderPanel
+        isOpen={infraBuilderOpen}
+        onClose={() => setInfraBuilderOpen(false)}
       />
     </div>
   );
