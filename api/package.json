@@ -1,0 +1,16 @@
+{
+  "name": "fabric-toolbox-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for Fabric Toolbox",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "dependencies": {
+    "stripe": "^14.0.0"
+  },
+  "devDependencies": {
+    "@azure/functions": "^4.0.0",
+    "typescript": "^5.3.0"
+  }
+}

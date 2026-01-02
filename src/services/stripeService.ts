@@ -33,7 +33,9 @@ const STRIPE_CONFIG: StripeConfig = {
   priceId: import.meta.env.VITE_STRIPE_PRICE_ID || '',
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// For Azure Static Web Apps, the API is at /api
+// No need for a separate base URL - it's integrated
+const API_BASE_URL = '/api';
 
 // ============ STORAGE ============
 
