@@ -8,6 +8,13 @@ const mockGetInitialGreeting = vi.fn();
 const mockCreateInitialState = vi.fn();
 const mockGenerateScript = vi.fn();
 const mockGetScriptFilename = vi.fn();
+const mockApplyTemplate = vi.fn();
+const mockEstimateCost = vi.fn();
+
+const mockTemplates = [
+  { id: 'starter', name: 'Starter', config: { capacitySize: 'F2' } },
+  { id: 'enterprise', name: 'Enterprise', config: { capacitySize: 'F32' } },
+];
 
 vi.mock('../../services/infrastructureService', () => ({
   processInfraMessage: (...args: unknown[]) => mockProcessInfraMessage(...args),
@@ -15,6 +22,12 @@ vi.mock('../../services/infrastructureService', () => ({
   createInitialState: () => mockCreateInitialState(),
   generateScript: (...args: unknown[]) => mockGenerateScript(...args),
   getScriptFilename: (...args: unknown[]) => mockGetScriptFilename(...args),
+  applyTemplate: (...args: unknown[]) => mockApplyTemplate(...args),
+  estimateCost: (...args: unknown[]) => mockEstimateCost(...args),
+  INFRASTRUCTURE_TEMPLATES: [
+    { id: 'starter', name: 'Starter', config: { capacitySize: 'F2' } },
+    { id: 'enterprise', name: 'Enterprise', config: { capacitySize: 'F32' } },
+  ],
 }));
 
 // Mock LLM service

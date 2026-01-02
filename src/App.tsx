@@ -1620,7 +1620,7 @@ const InfrastructureBuilderPanel = ({
                         color: '#22C55E',
                         fontWeight: 600,
                       }}>
-                        {msg.scriptFormat === 'powershell' ? 'PowerShell Script' : 'Bicep Template'}
+                        {msg.scriptFormat === 'powershell' ? 'PowerShell Script' : msg.scriptFormat === 'bicep' ? 'Bicep Template' : 'Terraform Config'}
                       </span>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
@@ -1706,6 +1706,20 @@ const InfrastructureBuilderPanel = ({
                         }}
                       >
                         Bicep
+                      </button>
+                      <button
+                        onClick={() => regenerateScript('terraform')}
+                        style={{
+                          background: msg.scriptFormat === 'terraform' ? '#22C55E' : 'rgba(34,197,94,0.1)',
+                          border: '1px solid rgba(34,197,94,0.3)',
+                          borderRadius: '4px',
+                          padding: '6px 12px',
+                          color: msg.scriptFormat === 'terraform' ? '#FEFEFE' : '#22C55E',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Terraform
                       </button>
                     </div>
                   </div>

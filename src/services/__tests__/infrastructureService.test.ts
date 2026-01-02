@@ -226,6 +226,57 @@ describe('infrastructureService', () => {
       expect(script).toContain('Microsoft.Fabric/capacities');
     });
 
+    it('generates Terraform config with config values', () => {
+      const config = {
+        environmentName: 'tf-env',
+        capacitySize: 'F8' as const,
+        region: 'westeurope',
+        workspaceName: 'TF Workspace',
+        createLakehouse: true,
+        lakehouseCount: 2,
+        createWarehouse: true,
+        warehouseCount: 1,
+        enableGitIntegration: true,
+        gitProvider: 'github' as const,
+      };
+
+      const script = generateScript(config, 'terraform');
+
+      expect(script).toContain('tf-env');
+      expect(script).toContain('F8');
+      expect(script).toContain('westeurope');
+      expect(script).toContain('azapi_resource');
+      expect(script).toContain('fabric_capacity');
+      expect(script).toContain('terraform {');
+      expect(script).toContain('required_providers');
+    });
+
+    it('generates Terraform config with lakehouses', () => {
+      const config = {
+        environmentName: 'lh-tf-env',
+        createLakehouse: true,
+        lakehouseCount: 3,
+      };
+
+      const script = generateScript(config, 'terraform');
+
+      expect(script).toContain('create_lakehouse = true');
+      expect(script).toContain('lakehouse_count  = 3');
+    });
+
+    it('generates Terraform config with warehouses', () => {
+      const config = {
+        environmentName: 'wh-tf-env',
+        createWarehouse: true,
+        warehouseCount: 2,
+      };
+
+      const script = generateScript(config, 'terraform');
+
+      expect(script).toContain('create_warehouse = true');
+      expect(script).toContain('warehouse_count  = 2');
+    });
+
     it('excludes warehouse section when not selected', () => {
       const config = {
         environmentName: 'no-wh-env',
@@ -260,6 +311,12 @@ describe('infrastructureService', () => {
       const filename = getScriptFilename('bicep', 'my-env');
 
       expect(filename).toBe('my-env-infrastructure.bicep');
+    });
+
+    it('generates Terraform filename', () => {
+      const filename = getScriptFilename('terraform', 'my-env');
+
+      expect(filename).toBe('my-env-infrastructure.tf');
     });
 
     it('sanitizes environment name', () => {
