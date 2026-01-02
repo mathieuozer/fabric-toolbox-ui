@@ -85,6 +85,270 @@ export interface InfraMessage {
   scriptFormat?: ScriptFormat;
 }
 
+// ============ INFRASTRUCTURE TEMPLATES ============
+
+export interface InfraTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'analytics' | 'lakehouse' | 'realtime' | 'starter' | 'enterprise';
+  config: Partial<InfraConfig>;
+  estimatedSetupTime: string;
+  useCases: string[];
+}
+
+export const INFRASTRUCTURE_TEMPLATES: InfraTemplate[] = [
+  {
+    id: 'starter',
+    name: 'Starter Workspace',
+    description: 'Simple setup for learning and experimentation',
+    icon: '🚀',
+    category: 'starter',
+    config: {
+      capacitySize: 'F2',
+      createLakehouse: true,
+      lakehouseCount: 1,
+      createWarehouse: false,
+      createPipeline: false,
+      enableGitIntegration: false,
+      enableRBAC: false,
+      enableMonitoring: false,
+    },
+    estimatedSetupTime: '5 mins',
+    useCases: ['Learning Fabric', 'POC/Demo', 'Personal projects'],
+  },
+  {
+    id: 'data-lakehouse',
+    name: 'Data Lakehouse',
+    description: 'Bronze/Silver/Gold medallion architecture with pipelines',
+    icon: '🏛️',
+    category: 'lakehouse',
+    config: {
+      capacitySize: 'F8',
+      createLakehouse: true,
+      lakehouseCount: 3, // bronze, silver, gold
+      lakehouseNames: ['bronze-lakehouse', 'silver-lakehouse', 'gold-lakehouse'],
+      createWarehouse: false,
+      createPipeline: true,
+      pipelineCount: 2,
+      enableGitIntegration: true,
+      gitProvider: 'azure-devops',
+      enableRBAC: true,
+      enableMonitoring: true,
+    },
+    estimatedSetupTime: '15 mins',
+    useCases: ['Data engineering', 'ETL pipelines', 'Data lake modernization'],
+  },
+  {
+    id: 'analytics-warehouse',
+    name: 'Analytics Warehouse',
+    description: 'SQL-first analytics with warehouse and semantic models',
+    icon: '📊',
+    category: 'analytics',
+    config: {
+      capacitySize: 'F16',
+      createLakehouse: true,
+      lakehouseCount: 1,
+      createWarehouse: true,
+      warehouseCount: 1,
+      createPipeline: true,
+      pipelineCount: 1,
+      enableGitIntegration: true,
+      gitProvider: 'azure-devops',
+      enableRBAC: true,
+      enableMonitoring: true,
+    },
+    estimatedSetupTime: '20 mins',
+    useCases: ['Business intelligence', 'SQL analytics', 'Reporting'],
+  },
+  {
+    id: 'realtime-analytics',
+    name: 'Real-time Analytics',
+    description: 'Streaming data with Eventhouse and KQL analytics',
+    icon: '⚡',
+    category: 'realtime',
+    config: {
+      capacitySize: 'F8',
+      createLakehouse: true,
+      lakehouseCount: 1,
+      createWarehouse: false,
+      createPipeline: true,
+      pipelineCount: 1,
+      enableGitIntegration: true,
+      gitProvider: 'azure-devops',
+      enableRBAC: true,
+      enableMonitoring: true,
+    },
+    estimatedSetupTime: '15 mins',
+    useCases: ['IoT analytics', 'Log analytics', 'Real-time dashboards'],
+  },
+  {
+    id: 'enterprise-full',
+    name: 'Enterprise Platform',
+    description: 'Full-featured setup with all components and governance',
+    icon: '🏢',
+    category: 'enterprise',
+    config: {
+      capacitySize: 'F32',
+      createLakehouse: true,
+      lakehouseCount: 3,
+      lakehouseNames: ['bronze-lakehouse', 'silver-lakehouse', 'gold-lakehouse'],
+      createWarehouse: true,
+      warehouseCount: 2,
+      warehouseNames: ['analytics-warehouse', 'reporting-warehouse'],
+      createPipeline: true,
+      pipelineCount: 3,
+      enableGitIntegration: true,
+      gitProvider: 'azure-devops',
+      enableRBAC: true,
+      enableMonitoring: true,
+      enableAuditLogs: true,
+    },
+    estimatedSetupTime: '30 mins',
+    useCases: ['Enterprise data platform', 'Multi-team environments', 'Production workloads'],
+  },
+  {
+    id: 'cicd-ready',
+    name: 'CI/CD Ready',
+    description: 'Development workspace optimized for Git-based workflows',
+    icon: '🔄',
+    category: 'enterprise',
+    config: {
+      capacitySize: 'F4',
+      createLakehouse: true,
+      lakehouseCount: 1,
+      createWarehouse: false,
+      createPipeline: true,
+      pipelineCount: 1,
+      enableGitIntegration: true,
+      gitProvider: 'github',
+      enableRBAC: true,
+      enableMonitoring: false,
+    },
+    estimatedSetupTime: '10 mins',
+    useCases: ['DevOps teams', 'Automated deployments', 'Feature branches'],
+  },
+];
+
+// ============ COST ESTIMATOR ============
+
+export interface CapacityCost {
+  sku: string;
+  cuPerHour: number;
+  pricePerHour: number;  // USD
+  pricePerMonth: number; // USD (730 hours)
+  tier: 'dev' | 'small' | 'medium' | 'large' | 'enterprise';
+}
+
+// Fabric capacity pricing (approximate USD, pay-as-you-go)
+// Prices as of 2024 - actual prices may vary by region
+export const CAPACITY_COSTS: CapacityCost[] = [
+  { sku: 'F2', cuPerHour: 2, pricePerHour: 0.36, pricePerMonth: 263, tier: 'dev' },
+  { sku: 'F4', cuPerHour: 4, pricePerHour: 0.72, pricePerMonth: 526, tier: 'dev' },
+  { sku: 'F8', cuPerHour: 8, pricePerHour: 1.44, pricePerMonth: 1051, tier: 'small' },
+  { sku: 'F16', cuPerHour: 16, pricePerHour: 2.88, pricePerMonth: 2102, tier: 'small' },
+  { sku: 'F32', cuPerHour: 32, pricePerHour: 5.76, pricePerMonth: 4205, tier: 'medium' },
+  { sku: 'F64', cuPerHour: 64, pricePerHour: 11.52, pricePerMonth: 8410, tier: 'medium' },
+  { sku: 'F128', cuPerHour: 128, pricePerHour: 23.04, pricePerMonth: 16819, tier: 'large' },
+  { sku: 'F256', cuPerHour: 256, pricePerHour: 46.08, pricePerMonth: 33638, tier: 'large' },
+  { sku: 'F512', cuPerHour: 512, pricePerHour: 92.16, pricePerMonth: 67277, tier: 'enterprise' },
+  { sku: 'F1024', cuPerHour: 1024, pricePerHour: 184.32, pricePerMonth: 134554, tier: 'enterprise' },
+  { sku: 'F2048', cuPerHour: 2048, pricePerHour: 368.64, pricePerMonth: 269107, tier: 'enterprise' },
+];
+
+export interface CostEstimate {
+  capacityCost: CapacityCost;
+  monthlyTotal: number;
+  breakdown: {
+    capacity: number;
+    storage: number;  // Estimated based on components
+    compute: number;  // Additional compute estimate
+  };
+  recommendations: string[];
+  savingsTips: string[];
+}
+
+export function estimateCost(config: Partial<InfraConfig>): CostEstimate {
+  const capacitySku = config.capacitySize || 'F4';
+  const capacityCost = CAPACITY_COSTS.find(c => c.sku === capacitySku) || CAPACITY_COSTS[1];
+
+  // Estimate storage costs based on components (rough estimates)
+  const lakehouseCount = config.createLakehouse ? (config.lakehouseCount || 1) : 0;
+  const warehouseCount = config.createWarehouse ? (config.warehouseCount || 1) : 0;
+
+  // Estimated monthly storage: ~$50/lakehouse, ~$100/warehouse (varies by usage)
+  const storageCost = (lakehouseCount * 50) + (warehouseCount * 100);
+
+  // Additional compute estimate for pipelines
+  const pipelineCount = config.createPipeline ? (config.pipelineCount || 1) : 0;
+  const computeCost = pipelineCount * 25; // ~$25/pipeline/month for light usage
+
+  const monthlyTotal = capacityCost.pricePerMonth + storageCost + computeCost;
+
+  // Generate recommendations
+  const recommendations: string[] = [];
+  const savingsTips: string[] = [];
+
+  if (capacityCost.tier === 'enterprise' && !config.enableMonitoring) {
+    recommendations.push('Enable monitoring for enterprise workloads to track performance');
+  }
+
+  if (capacityCost.tier === 'dev' && config.createWarehouse && (warehouseCount > 1)) {
+    recommendations.push('Consider larger capacity for multiple warehouses');
+  }
+
+  if (lakehouseCount >= 3 && !config.enableGitIntegration) {
+    recommendations.push('Enable Git integration for medallion architecture version control');
+  }
+
+  // Savings tips
+  if (capacityCost.pricePerMonth > 5000) {
+    savingsTips.push('Consider reserved capacity for 40%+ savings on long-term workloads');
+  }
+
+  if (capacityCost.tier === 'dev') {
+    savingsTips.push('Use capacity pause/resume to save costs during off-hours');
+  }
+
+  if (!config.enableMonitoring && monthlyTotal > 2000) {
+    savingsTips.push('Enable monitoring to identify optimization opportunities');
+  }
+
+  savingsTips.push('Start with lower capacity and scale up based on actual usage');
+
+  return {
+    capacityCost,
+    monthlyTotal,
+    breakdown: {
+      capacity: capacityCost.pricePerMonth,
+      storage: storageCost,
+      compute: computeCost,
+    },
+    recommendations,
+    savingsTips,
+  };
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function getTemplateById(id: string): InfraTemplate | undefined {
+  return INFRASTRUCTURE_TEMPLATES.find(t => t.id === id);
+}
+
+export function applyTemplate(templateId: string): Partial<InfraConfig> {
+  const template = getTemplateById(templateId);
+  if (!template) return {};
+  return { ...template.config };
+}
+
 // ============ QUESTIONS FLOW ============
 
 const INFRASTRUCTURE_QUESTIONS: InfraQuestion[] = [

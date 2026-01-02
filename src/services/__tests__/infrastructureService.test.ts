@@ -5,6 +5,12 @@ import {
   processInfraMessage,
   generateScript,
   getScriptFilename,
+  INFRASTRUCTURE_TEMPLATES,
+  CAPACITY_COSTS,
+  estimateCost,
+  formatCurrency,
+  getTemplateById,
+  applyTemplate,
 } from '../infrastructureService';
 
 describe('infrastructureService', () => {
@@ -266,6 +272,163 @@ describe('infrastructureService', () => {
       const filename = getScriptFilename('powershell', '');
 
       expect(filename).toBe('deploy-fabric-infrastructure.ps1');
+    });
+  });
+
+  describe('INFRASTRUCTURE_TEMPLATES', () => {
+    it('has at least 5 templates', () => {
+      expect(INFRASTRUCTURE_TEMPLATES.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('each template has required fields', () => {
+      for (const template of INFRASTRUCTURE_TEMPLATES) {
+        expect(template.id).toBeDefined();
+        expect(template.name).toBeDefined();
+        expect(template.description).toBeDefined();
+        expect(template.icon).toBeDefined();
+        expect(template.category).toBeDefined();
+        expect(template.config).toBeDefined();
+        expect(template.estimatedSetupTime).toBeDefined();
+        expect(template.useCases).toBeDefined();
+        expect(template.useCases.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('has starter template with minimal config', () => {
+      const starter = INFRASTRUCTURE_TEMPLATES.find(t => t.id === 'starter');
+      expect(starter).toBeDefined();
+      expect(starter?.config.capacitySize).toBe('F2');
+      expect(starter?.config.enableMonitoring).toBe(false);
+    });
+
+    it('has enterprise template with full config', () => {
+      const enterprise = INFRASTRUCTURE_TEMPLATES.find(t => t.id === 'enterprise-full');
+      expect(enterprise).toBeDefined();
+      expect(enterprise?.config.capacitySize).toBe('F32');
+      expect(enterprise?.config.createLakehouse).toBe(true);
+      expect(enterprise?.config.createWarehouse).toBe(true);
+      expect(enterprise?.config.enableMonitoring).toBe(true);
+    });
+  });
+
+  describe('getTemplateById', () => {
+    it('returns template by id', () => {
+      const template = getTemplateById('data-lakehouse');
+      expect(template).toBeDefined();
+      expect(template?.name).toBe('Data Lakehouse');
+    });
+
+    it('returns undefined for unknown id', () => {
+      const template = getTemplateById('nonexistent');
+      expect(template).toBeUndefined();
+    });
+  });
+
+  describe('applyTemplate', () => {
+    it('returns template config', () => {
+      const config = applyTemplate('starter');
+      expect(config.capacitySize).toBe('F2');
+      expect(config.createLakehouse).toBe(true);
+    });
+
+    it('returns empty object for unknown template', () => {
+      const config = applyTemplate('nonexistent');
+      expect(config).toEqual({});
+    });
+  });
+
+  describe('CAPACITY_COSTS', () => {
+    it('has costs for all capacity sizes', () => {
+      const expectedSizes = ['F2', 'F4', 'F8', 'F16', 'F32', 'F64', 'F128', 'F256', 'F512', 'F1024', 'F2048'];
+      for (const size of expectedSizes) {
+        const cost = CAPACITY_COSTS.find(c => c.sku === size);
+        expect(cost).toBeDefined();
+        expect(cost?.pricePerMonth).toBeGreaterThan(0);
+      }
+    });
+
+    it('costs increase with capacity size', () => {
+      const f2 = CAPACITY_COSTS.find(c => c.sku === 'F2');
+      const f64 = CAPACITY_COSTS.find(c => c.sku === 'F64');
+      expect(f64?.pricePerMonth).toBeGreaterThan(f2?.pricePerMonth || 0);
+    });
+  });
+
+  describe('estimateCost', () => {
+    it('calculates cost for basic config', () => {
+      const estimate = estimateCost({ capacitySize: 'F4' });
+
+      expect(estimate.capacityCost.sku).toBe('F4');
+      expect(estimate.monthlyTotal).toBeGreaterThan(0);
+      expect(estimate.breakdown.capacity).toBe(526);
+    });
+
+    it('includes storage costs for lakehouses', () => {
+      const withoutLakehouse = estimateCost({ capacitySize: 'F4', createLakehouse: false });
+      const withLakehouse = estimateCost({ capacitySize: 'F4', createLakehouse: true, lakehouseCount: 2 });
+
+      expect(withLakehouse.monthlyTotal).toBeGreaterThan(withoutLakehouse.monthlyTotal);
+      expect(withLakehouse.breakdown.storage).toBe(100); // 2 * $50
+    });
+
+    it('includes storage costs for warehouses', () => {
+      const withWarehouse = estimateCost({
+        capacitySize: 'F4',
+        createWarehouse: true,
+        warehouseCount: 1,
+      });
+
+      expect(withWarehouse.breakdown.storage).toBe(100); // 1 * $100
+    });
+
+    it('includes compute costs for pipelines', () => {
+      const withPipeline = estimateCost({
+        capacitySize: 'F4',
+        createPipeline: true,
+        pipelineCount: 2,
+      });
+
+      expect(withPipeline.breakdown.compute).toBe(50); // 2 * $25
+    });
+
+    it('generates recommendations for enterprise without monitoring', () => {
+      const estimate = estimateCost({
+        capacitySize: 'F512',
+        enableMonitoring: false,
+      });
+
+      expect(estimate.recommendations).toContain(
+        'Enable monitoring for enterprise workloads to track performance'
+      );
+    });
+
+    it('generates savings tips for high cost', () => {
+      const estimate = estimateCost({ capacitySize: 'F64' });
+
+      expect(estimate.savingsTips).toContain(
+        'Consider reserved capacity for 40%+ savings on long-term workloads'
+      );
+    });
+
+    it('always includes scale-up tip', () => {
+      const estimate = estimateCost({ capacitySize: 'F2' });
+
+      expect(estimate.savingsTips).toContain(
+        'Start with lower capacity and scale up based on actual usage'
+      );
+    });
+  });
+
+  describe('formatCurrency', () => {
+    it('formats number as USD', () => {
+      expect(formatCurrency(1000)).toBe('$1,000');
+      expect(formatCurrency(526)).toBe('$526');
+      expect(formatCurrency(10000)).toBe('$10,000');
+    });
+
+    it('rounds to whole numbers', () => {
+      expect(formatCurrency(1000.5)).toBe('$1,001');
+      expect(formatCurrency(999.4)).toBe('$999');
     });
   });
 });

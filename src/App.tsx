@@ -1434,10 +1434,13 @@ const InfrastructureBuilderPanel = ({
     conversationState,
     isProcessing,
     error,
+    templates,
+    costEstimate,
     sendMessage,
     reset,
     regenerateScript,
     downloadScript,
+    selectTemplate,
   } = useInfrastructureBuilder();
 
   const [input, setInput] = useState('');
@@ -1794,36 +1797,142 @@ const InfrastructureBuilderPanel = ({
             </button>
           </div>
 
-          {/* Quick actions */}
+          {/* Templates and Quick actions */}
           {conversationState.phase === 'greeting' && (
+            <div style={{ marginTop: '16px' }}>
+              {/* Template Grid */}
+              <div style={{
+                marginBottom: '12px',
+                fontSize: '11px',
+                color: 'rgba(255,255,255,0.5)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}>
+                Quick Start Templates
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '8px',
+                marginBottom: '16px',
+              }}>
+                {templates.map(template => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => selectTemplate(template.id)}
+                    style={{
+                      padding: '12px',
+                      background: 'rgba(34,197,94,0.05)',
+                      border: '1px solid rgba(34,197,94,0.2)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 150ms',
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px',
+                    }}>
+                      <span style={{ fontSize: '16px' }}>{template.icon}</span>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#22C55E',
+                      }}>
+                        {template.name}
+                      </span>
+                    </div>
+                    <div style={{
+                      fontSize: '10px',
+                      color: 'rgba(255,255,255,0.5)',
+                      lineHeight: 1.3,
+                    }}>
+                      {template.description}
+                    </div>
+                    <div style={{
+                      marginTop: '6px',
+                      fontSize: '10px',
+                      color: 'rgba(34,197,94,0.7)',
+                    }}>
+                      {template.config.capacitySize} · {template.estimatedSetupTime}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Quick suggestions */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                flexWrap: 'wrap',
+              }}>
+                {[
+                  'Guide me step by step',
+                  'Custom setup',
+                ].map(suggestion => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => sendMessage(suggestion)}
+                    style={{
+                      padding: '6px 12px',
+                      background: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.2)',
+                      borderRadius: '16px',
+                      color: '#22C55E',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cost Estimate Badge */}
+          {costEstimate && conversationState.phase !== 'greeting' && (
             <div style={{
-              display: 'flex',
-              gap: '8px',
               marginTop: '12px',
-              flexWrap: 'wrap',
+              padding: '10px 12px',
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.2)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-              {[
-                'Dev workspace with 3 lakehouses',
-                'Production environment with CI/CD',
-                'Guide me step by step',
-              ].map(suggestion => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  onClick={() => sendMessage(suggestion)}
-                  style={{
-                    padding: '6px 12px',
-                    background: 'rgba(34,197,94,0.1)',
-                    border: '1px solid rgba(34,197,94,0.2)',
-                    borderRadius: '16px',
-                    color: '#22C55E',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {suggestion}
-                </button>
-              ))}
+              <div>
+                <div style={{
+                  fontSize: '10px',
+                  color: 'rgba(255,255,255,0.5)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}>
+                  Estimated Monthly Cost
+                </div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: '#22C55E',
+                }}>
+                  ~${costEstimate.monthlyTotal.toLocaleString()}
+                </div>
+              </div>
+              <div style={{
+                textAlign: 'right',
+                fontSize: '10px',
+                color: 'rgba(255,255,255,0.5)',
+              }}>
+                <div>Capacity: ${costEstimate.breakdown.capacity.toLocaleString()}</div>
+                <div>Storage: ${costEstimate.breakdown.storage.toLocaleString()}</div>
+                <div>Compute: ${costEstimate.breakdown.compute.toLocaleString()}</div>
+              </div>
             </div>
           )}
         </form>
