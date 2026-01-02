@@ -37,7 +37,7 @@ export interface UsageLimits {
 
 export const PRICING = {
   pro: {
-    monthly: 5,
+    monthly: 15,
     currency: 'USD',
     name: 'Pro',
     description: 'Full access to all features',

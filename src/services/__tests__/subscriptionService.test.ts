@@ -477,7 +477,7 @@ describe('subscriptionService', () => {
     });
 
     it('PRICING has correct values', () => {
-      expect(PRICING.pro.monthly).toBe(5);
+      expect(PRICING.pro.monthly).toBe(15);
       expect(PRICING.pro.currency).toBe('USD');
     });
   });

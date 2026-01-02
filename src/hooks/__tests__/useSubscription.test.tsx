@@ -251,7 +251,7 @@ describe('useSubscription', () => {
     it('has correct pricing info', () => {
       const { result } = renderHook(() => useSubscription());
 
-      expect(result.current.pricing.pro.monthly).toBe(5);
+      expect(result.current.pricing.pro.monthly).toBe(15);
       expect(result.current.pricing.pro.currency).toBe('USD');
     });
 
