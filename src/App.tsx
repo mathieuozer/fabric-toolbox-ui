@@ -1,14 +1,329 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TOOLS_MANIFEST, ToolManifest, getToolsByCategory, searchTools } from './data/toolsManifest';
 import { useLLM } from './hooks/useLLM';
-import { ExtractedConfig } from './services/llmService';
-import {
-  downloadDeploymentZip,
-  generateEnvFile,
-  generateRunScript,
-  generateReadme,
-} from './services/deployService';
-import { EXAMPLE_QUERIES } from './services/llmService';
+import { useAuth } from './hooks/useAuth';
+import { useExecution } from './hooks/useExecution';
+import { ExtractedConfig, EXAMPLE_QUERIES } from './services/llmService';
+import { downloadDeploymentZip } from './services/deployService';
+import { addExecutionRecord } from './services/executionTrackingService';
+
+// Auth Button Component
+const AuthButton = () => {
+  const { isAuthenticated, isLoading, user, login, logout, config, initialize } = useAuth();
+  const [showConfig, setShowConfig] = useState(false);
+  const [clientId, setClientId] = useState(config?.clientId || '');
+  const [tenantId, setTenantId] = useState(config?.tenantId || '');
+
+  const handleConfigure = async () => {
+    if (clientId && tenantId) {
+      await initialize({ clientId, tenantId });
+      setShowConfig(false);
+    }
+  };
+
+  if (isAuthenticated && user) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 12px',
+          background: 'rgba(34,197,94,0.1)',
+          border: '1px solid rgba(34,197,94,0.3)',
+          borderRadius: '20px',
+        }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            background: '#22C55E',
+            borderRadius: '50%',
+          }} />
+          <span style={{ fontSize: '12px', color: '#22C55E' }}>{user.name}</span>
+        </div>
+        <button
+          onClick={logout}
+          disabled={isLoading}
+          style={{
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: '6px',
+            padding: '6px 12px',
+            color: '#EF4444',
+            fontSize: '12px',
+            cursor: 'pointer',
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    );
+  }
+
+  if (showConfig) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 12px',
+        background: 'rgba(43,142,195,0.05)',
+        border: '1px solid rgba(43,142,195,0.2)',
+        borderRadius: '8px',
+      }}>
+        <input
+          type="text"
+          value={clientId}
+          onChange={e => setClientId(e.target.value)}
+          placeholder="Client ID"
+          style={{
+            padding: '4px 8px',
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(43,142,195,0.2)',
+            borderRadius: '4px',
+            color: '#FEFEFE',
+            fontSize: '11px',
+            width: '120px',
+          }}
+        />
+        <input
+          type="text"
+          value={tenantId}
+          onChange={e => setTenantId(e.target.value)}
+          placeholder="Tenant ID"
+          style={{
+            padding: '4px 8px',
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(43,142,195,0.2)',
+            borderRadius: '4px',
+            color: '#FEFEFE',
+            fontSize: '11px',
+            width: '120px',
+          }}
+        />
+        <button
+          onClick={handleConfigure}
+          style={{
+            background: '#2B8EC3',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '4px 10px',
+            color: '#FEFEFE',
+            fontSize: '11px',
+            cursor: 'pointer',
+          }}
+        >
+          Connect
+        </button>
+        <button
+          onClick={() => setShowConfig(false)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#79B8D9',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => config ? login() : setShowConfig(true)}
+      disabled={isLoading}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '8px 14px',
+        background: 'rgba(43,142,195,0.1)',
+        border: '1px solid rgba(43,142,195,0.3)',
+        borderRadius: '6px',
+        color: '#79B8D9',
+        fontSize: '12px',
+        cursor: 'pointer',
+      }}
+    >
+      <span>🔐</span>
+      <span>{isLoading ? 'Connecting...' : 'Sign In'}</span>
+    </button>
+  );
+};
+
+// Execution Panel Component (shown after Deploy)
+const ExecutionPanel = ({
+  tool,
+  configValues,
+  onExecuted,
+}: {
+  tool: ToolManifest;
+  configValues: Record<string, string>;
+  onExecuted?: (success: boolean) => void;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const { prepareExecution, copyCommand, terminalInstructions, markAsExecuted } = useExecution();
+
+  useEffect(() => {
+    prepareExecution(tool, configValues);
+  }, [tool, configValues]);
+
+  const handleCopy = async () => {
+    const success = await copyCommand();
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleMarkExecuted = (success: boolean) => {
+    markAsExecuted(success);
+    onExecuted?.(success);
+  };
+
+  // Get platform-specific command
+  const platform = navigator.platform.toLowerCase().includes('mac') ? 'mac' :
+                   navigator.platform.toLowerCase().includes('win') ? 'windows' : 'linux';
+
+  return (
+    <div style={{
+      marginTop: '20px',
+      padding: '20px',
+      background: 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(16,185,129,0.1) 100%)',
+      border: '1px solid rgba(34,197,94,0.3)',
+      borderRadius: '12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          background: '#22C55E',
+          borderRadius: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '20px',
+        }}>
+          ▶️
+        </div>
+        <div>
+          <h3 style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: '15px',
+            fontWeight: 600,
+            color: '#FEFEFE',
+            margin: 0,
+          }}>
+            Execute Now
+          </h3>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: '2px 0 0' }}>
+            Copy command and run in your terminal
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+        <button
+          onClick={handleCopy}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px',
+            background: '#22C55E',
+            border: 'none',
+            borderRadius: '8px',
+            color: '#FEFEFE',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {copied ? '✓ Copied!' : '📋 Copy Command'}
+        </button>
+        <button
+          onClick={() => setShowInstructions(!showInstructions)}
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(34,197,94,0.2)',
+            border: '1px solid rgba(34,197,94,0.3)',
+            borderRadius: '8px',
+            color: '#22C55E',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          {showInstructions ? 'Hide' : 'How to Run'}
+        </button>
+      </div>
+
+      {showInstructions && (
+        <div style={{
+          background: 'rgba(0,0,0,0.2)',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '16px',
+        }}>
+          <h4 style={{ color: '#22C55E', fontSize: '13px', marginBottom: '12px' }}>
+            {platform === 'mac' ? '🍎 macOS' : platform === 'windows' ? '🪟 Windows' : '🐧 Linux'} Instructions:
+          </h4>
+          <ol style={{ margin: 0, paddingLeft: '20px', color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>
+            <li style={{ marginBottom: '8px' }}>
+              Open {platform === 'mac' ? 'Terminal (Cmd + Space, type "Terminal")' :
+                     platform === 'windows' ? 'PowerShell (Win + X)' : 'Terminal (Ctrl + Alt + T)'}
+            </li>
+            <li style={{ marginBottom: '8px' }}>Navigate to your project directory</li>
+            <li style={{ marginBottom: '8px' }}>Click "Copy Command" above</li>
+            <li>Paste (Ctrl/Cmd + V) and press Enter</li>
+          </ol>
+        </div>
+      )}
+
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        paddingTop: '12px',
+        borderTop: '1px solid rgba(34,197,94,0.2)',
+      }}>
+        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>After running:</span>
+        <button
+          onClick={() => handleMarkExecuted(true)}
+          style={{
+            background: 'rgba(34,197,94,0.2)',
+            border: '1px solid rgba(34,197,94,0.3)',
+            borderRadius: '4px',
+            padding: '4px 10px',
+            color: '#22C55E',
+            fontSize: '11px',
+            cursor: 'pointer',
+          }}
+        >
+          ✓ Completed
+        </button>
+        <button
+          onClick={() => handleMarkExecuted(false)}
+          style={{
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: '4px',
+            padding: '4px 10px',
+            color: '#EF4444',
+            fontSize: '11px',
+            cursor: 'pointer',
+          }}
+        >
+          ✗ Failed
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const CATEGORIES = [
   { id: 'monitoring', label: 'Monitoring', icon: '◉' },
@@ -967,6 +1282,16 @@ const ConfigPanel = ({
                   </button>
                 </div>
               </div>
+
+              {/* Execution Panel */}
+              <ExecutionPanel
+                tool={tool}
+                configValues={configValues}
+                onExecuted={(success) => {
+                  // Could show a toast or notification here
+                  console.log(`Execution ${success ? 'completed' : 'failed'}`);
+                }}
+              />
             </div>
           )}
         </div>
@@ -1850,6 +2175,9 @@ export default function App() {
                 color: 'rgba(121,184,217,0.6)',
               }}>⌘K</span>
             </button>
+
+            {/* Auth button */}
+            <AuthButton />
           </div>
         </header>
 
